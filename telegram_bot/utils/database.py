@@ -15,14 +15,13 @@ class Database:
     async def get_energy_all(self):
         while True:
             await asyncio.sleep(3600)
-            users = self.cur.execute('SELECT energy FROM users').fetchall()
+            users = self.cur.execute('SELECT * FROM users').fetchall()
             for user in users:
-                energy = user[0]
+                user_id = user[0]
+                energy = user[2]
                 if energy < 100:
-                    print('GET')
-                    self.cur.execute('UPDATE users SET energy = energy+10')
+                    self.cur.execute(f'UPDATE users SET energy = energy+10 WHERE user_id = {user_id}')
                     self.conn.commit()
-
 
 class User(Database):
     def is_user_exists(self, tg_user: Message):
