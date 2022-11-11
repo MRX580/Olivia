@@ -1,12 +1,9 @@
-from aiogram.dispatcher import FSMContext
 from handlers.user import register_handlers_client
 from callbacks.user import register_handlers_callback
-import logging
 from aiogram import executor
 import asyncio
 from create_bot import dp
 from utils.database import Database
-import threading
 database = Database()
 
 
