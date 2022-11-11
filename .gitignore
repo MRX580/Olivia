@@ -1,0 +1,4 @@
+venv
+.idea
+.env
+telegram_bot/utils/users.db
