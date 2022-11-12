@@ -1,11 +1,16 @@
-from create_bot import bot
+import logging
+
 from aiogram import types, Dispatcher
 from aiogram.dispatcher.filters.state import State, StatesGroup
+from datetime import datetime
+
+from create_bot import bot
 from keyboards.main_keyboards import Kb
 from utils.database import User
 from utils.languages import lang
 
 
+logging.basicConfig(filename='bot.log', encoding='utf-8', level=logging.INFO)
 database = User()
 
 
@@ -14,6 +19,8 @@ class Register(StatesGroup):
 
 
 async def welcome(message: types.Message):
+    logging.info(
+        f'[{message.from_user.id} | {message.from_user.first_name}] Написал {message.text} в {datetime.now()}')
     if database.is_user_exists(message):
         await bot.send_message(message.chat.id, lang[database.get_language(message)]['send_welcome'](message),
                                reply_markup=Kb.start_button(message))
@@ -24,6 +31,8 @@ async def welcome(message: types.Message):
 
 
 async def get_name(message: types.Message):
+    logging.info(
+        f'[{message.from_user.id} | {message.from_user.first_name}] Написал {message.text} в {datetime.now()}')
     database.create_user(message, message.text)
     await bot.send_message(message.chat.id, lang[database.get_language(message)]['send_welcome'](message),
                            reply_markup=Kb.start_button(message))
