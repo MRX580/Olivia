@@ -90,10 +90,13 @@ async def fortune(call: types.CallbackQuery, state: FSMContext):
         await FortuneState.question.set()
         await call.answer()
         await asyncio.sleep(600)
-        if datetime.now()-timedelta(minutes=10) < database_fortune.check_session(call)+timedelta(seconds=1):
+        try:
+            if datetime.now()-timedelta(minutes=10) < database_fortune.check_session(call)+timedelta(seconds=1):
+                return
+            await call.message.answer(lang[database.get_language(call)]['session'], reply_markup=Kb.only_back(call))
+            await FortuneState.next()
+        except IndexError:
             return
-        await call.message.answer(lang[database.get_language(call)]['session'], reply_markup=Kb.only_back(call))
-        await FortuneState.next()
     if call.data == 'fortune-1d':
         logging.info(
             f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Гадание раз в день | {datetime.now()}')
@@ -121,10 +124,13 @@ async def fortune(call: types.CallbackQuery, state: FSMContext):
         await FortuneState.question.set()
         await call.answer()
         await asyncio.sleep(600)
-        if datetime.now()-timedelta(minutes=10) < database_fortune.check_session(call)+timedelta(seconds=1):
+        try:
+            if datetime.now()-timedelta(minutes=10) < database_fortune.check_session(call)+timedelta(seconds=1):
+                return
+            await call.message.answer(lang[database.get_language(call)]['session'], reply_markup=Kb.only_back(call))
+            await FortuneState.next()
+        except IndexError:
             return
-        await call.message.answer(lang[database.get_language(call)]['session'], reply_markup=Kb.only_back(call))
-        await FortuneState.next()
     if call.data == 'fortune-7d':
         logging.info(
             f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Гадание раз в неделю | {datetime.now()}')
@@ -152,10 +158,13 @@ async def fortune(call: types.CallbackQuery, state: FSMContext):
         await FortuneState.question.set()
         await call.answer()
         await asyncio.sleep(600)
-        if datetime.now()-timedelta(minutes=10) < database_fortune.check_session(call)+timedelta(seconds=1):
+        try:
+            if datetime.now()-timedelta(minutes=10) < database_fortune.check_session(call)+timedelta(seconds=1):
+                return
+            await call.message.answer(lang[database.get_language(call)]['session'], reply_markup=Kb.only_back(call))
+            await FortuneState.next()
+        except IndexError:
             return
-        await call.message.answer(lang[database.get_language(call)]['session'], reply_markup=Kb.only_back(call))
-        await FortuneState.next()
     if call.data == 'fortune-30d':
         logging.info(
             f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Гадание раз в месяц | {datetime.now()}')
@@ -183,10 +192,13 @@ async def fortune(call: types.CallbackQuery, state: FSMContext):
         await FortuneState.question.set()
         await call.answer()
         await asyncio.sleep(600)
-        if datetime.now()-timedelta(minutes=10) < database_fortune.check_session(call)+timedelta(seconds=1):
+        try:
+            if datetime.now()-timedelta(minutes=10) < database_fortune.check_session(call)+timedelta(seconds=1):
+                return
+            await call.message.answer(lang[database.get_language(call)]['session'], reply_markup=Kb.only_back(call))
+            await FortuneState.next()
+        except IndexError:
             return
-        await call.message.answer(lang[database.get_language(call)]['session'], reply_markup=Kb.only_back(call))
-        await FortuneState.next()
     if call.data == 'fortune_back':
         logging.info(
             f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Назад(фортуна) | {datetime.now()}')
