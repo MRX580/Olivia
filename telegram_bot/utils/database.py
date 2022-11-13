@@ -17,12 +17,13 @@ class Database:
     async def get_energy_all(self):
         while True:
             await asyncio.sleep(3600)
-            users = self.cur.execute('SELECT user_id FROM users').fetchall()[0]
+            users = self.cur.execute('SELECT user_id FROM users').fetchall()
             for user in users:
+                user = user[0]
                 energy = self.cur.execute(f'SELECT energy FROM users WHERE user_id = {user}').fetchone()[0]
                 if energy < 100:
                     self.cur.execute(f'UPDATE users SET energy = energy+10 WHERE user_id = {user}')
-                    self.conn.commit()
+            self.conn.commit()
 
     def convert_time(self, time: str):
         data = time[:-7].replace('-', ':').replace(' ', ':').split(':')
