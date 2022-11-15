@@ -47,6 +47,10 @@ class Kb:
             InlineKeyboardButton(text=lang[database.get_language(message)]['back'], callback_data='fortune_back'),
         )
 
+    FULL_TEXT = InlineKeyboardMarkup().add(
+        InlineKeyboardButton(text='♾', callback_data='full_text'),
+    )
+
     SWITCH_LANGUAGE = InlineKeyboardMarkup(row_width=2).add(
         InlineKeyboardButton(text='English 🇺🇸', callback_data='switch english'),
         InlineKeyboardButton(text='Русский 🇷🇺', callback_data='switch russian'),

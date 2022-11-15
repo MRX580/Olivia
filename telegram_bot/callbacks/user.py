@@ -78,11 +78,8 @@ async def fortune(call: types.CallbackQuery, state: FSMContext):
         path_img = os.path.join(DIR_IMG, f'{choose}.jpg')
         path_txt = os.path.join(DIR_TXT, f'{choose}.txt')
         await call.message.answer_photo(open(path_img, 'rb'))
-        if len(open(path_txt, 'r').read()) > 4096:
-            for x in range(0, len(open(path_txt, 'r').read()), 4096):
-                await call.message.answer(open(path_txt, 'r').read()[x:x + 4096])
-        else:
-            await call.message.answer(open(path_txt, 'r').read())
+        await state.update_data(text=open(path_txt, 'r').read())
+        await call.message.answer(open(path_txt, 'r').read()[0:380] + '...', reply_markup=Kb.FULL_TEXT)
         database.minus_energy(call)
         database_fortune.check_first_try(call)
         await state.update_data(card=choose)
@@ -113,11 +110,8 @@ async def fortune(call: types.CallbackQuery, state: FSMContext):
         path_img = os.path.join(DIR_IMG, f'{choose}.jpg')
         path_txt = os.path.join(DIR_TXT, f'{choose}.txt')
         await call.message.answer_photo(open(path_img, 'rb'))
-        if len(open(path_txt, 'r').read()) > 4096:
-            for x in range(0, len(open(path_txt, 'r').read()), 4096):
-                await call.message.answer(open(path_txt, 'r').read()[x:x + 4096])
-        else:
-            await call.message.answer(open(path_txt, 'r').read())
+        await state.update_data(text=open(path_txt, 'r').read())
+        await call.message.answer(open(path_txt, 'r').read()[0:380] + '...', reply_markup=Kb.FULL_TEXT)
         database_fortune.check_first_try(call)
         await state.update_data(card=choose)
         await call.message.answer(lang[database.get_language(call)]['question'])
@@ -147,11 +141,8 @@ async def fortune(call: types.CallbackQuery, state: FSMContext):
         path_img = os.path.join(DIR_IMG, f'{choose}.jpg')
         path_txt = os.path.join(DIR_TXT, f'{choose}.txt')
         await call.message.answer_photo(open(path_img, 'rb'))
-        if len(open(path_txt, 'r').read()) > 4096:
-            for x in range(0, len(open(path_txt, 'r').read()), 4096):
-                await call.message.answer(open(path_txt, 'r').read()[x:x + 4096])
-        else:
-            await call.message.answer(open(path_txt, 'r').read())
+        await state.update_data(text=open(path_txt, 'r').read())
+        await call.message.answer(open(path_txt, 'r').read()[0:380] + '...', reply_markup=Kb.FULL_TEXT)
         database_fortune.check_first_try(call)
         await state.update_data(card=choose)
         await call.message.answer(lang[database.get_language(call)]['question'])
@@ -181,11 +172,8 @@ async def fortune(call: types.CallbackQuery, state: FSMContext):
         path_img = os.path.join(DIR_IMG, f'{choose}.jpg')
         path_txt = os.path.join(DIR_TXT, f'{choose}.txt')
         await call.message.answer_photo(open(path_img, 'rb'))
-        if len(open(path_txt, 'r').read()) > 4096:
-            for x in range(0, len(open(path_txt, 'r').read()), 4096):
-                await call.message.answer(open(path_txt, 'r').read()[x:x + 4096])
-        else:
-            await call.message.answer(open(path_txt, 'r').read())
+        await state.update_data(text=open(path_txt, 'r').read())
+        await call.message.answer(open(path_txt, 'r').read()[0:380] + '...', reply_markup=Kb.FULL_TEXT)
         database_fortune.check_first_try(call)
         await state.update_data(card=choose)
         await call.message.answer(lang[database.get_language(call)]['question'])
@@ -204,6 +192,16 @@ async def fortune(call: types.CallbackQuery, state: FSMContext):
             f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Назад(фортуна) | {datetime.now()}')
         await call.message.edit_text(lang[database.get_language(call)]['send_welcome'](call), reply_markup=Kb.start_button(call))
         await call.answer()
+
+
+async def full_text(call: types.CallbackQuery, state: FSMContext):
+    if call.data == 'full_text':
+        data = await state.get_data()
+        if len(data['text']) > 4096:
+            for x in range(0, len(data['text']), 4096):
+                await call.message.edit_text(data['text'][x:x + 4096])
+        else:
+            await call.message.edit_text(data['text'])
 
 
 async def question(message: types.Message, state: FSMContext):
@@ -240,5 +238,6 @@ def register_handlers_callback(dp: Dispatcher):
     dp.register_callback_query_handler(fortune, text=['fortune', 'fortune_back', 'fortune-1d', 'fortune-7d',
                                                       'fortune-30d'])
     dp.register_callback_query_handler(add_wisdom, text=['add_wisdom'])
+    dp.register_callback_query_handler(full_text, text=['full_text'], state=FortuneState.question)
     dp.register_message_handler(question, state=FortuneState.question)
     dp.register_message_handler(listen_wisdom, state=WisdomState.wisdom)
