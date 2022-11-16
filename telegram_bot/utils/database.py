@@ -13,6 +13,7 @@ class Database:
     cur.execute('CREATE TABLE IF NOT EXISTS fortune (user_id INT, first_name TEXT, card_type TEXT, answer TEXT, '
                 'create_at datetime);')
     cur.execute('CREATE TABLE IF NOT EXISTS wisdom (user_id INT, first_name TEXT, message TEXT, create_at datetime);')
+    cur.execute('CREATE TABLE IF NOT EXISTS history(user_id INT, card TEXT, text TEXT, create_at DATETIME);')
 
     async def get_energy_all(self):
         while True:
@@ -96,6 +97,16 @@ class Fortune(Database):
         self.cur.execute('INSERT INTO fortune(user_id, first_name, card_type, answer, create_at) VALUES(?,?,?,?,?)',
                          (tg_user.id, tg_user.first_name, card_type, answer, datetime.now()))
         self.conn.commit()
+
+    def add_history(self, tg_user: Message or CallbackQuery,
+                    card: str,
+                    text: str):
+        self.cur.execute(f'INSERT INTO history(user_id, card, text, create_at) VALUES(?,?,?,?)',
+                         (tg_user.from_user.id, card, text, datetime.now()))
+        self.conn.commit()
+
+    def get_history(self, tg_user: Message or CallbackQuery):
+        return self.cur.execute(f'SELECT * FROM history WHERE user_id = {tg_user.from_user.id}').fetchall()
 
     def check_session(self, tg_user: Message or CallbackQuery):
         data = self.cur.execute(f'SELECT create_at FROM fortune WHERE user_id = {tg_user.from_user.id} ORDER BY '

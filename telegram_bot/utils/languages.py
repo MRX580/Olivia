@@ -35,9 +35,10 @@ lang = {
         'common': 'Ordinary divination(-50 energy)',
         'add_wisdom': 'Add wisdom 🌈',
         'add_wisdom_text': 'Please teach me something new! \
-(what should I add or improve? I will take into account all useful comments and links) \
-Let\'s make magic together ✨',
+        (what should I add or improve? I will take into account all useful comments and links) \
+        Let\'s make magic together ✨',
         'answer_wisdom': 'Thank you for your wisdom!\nI will listen to you',
+        'history': 'History of divination',
     },
     'ru': {
         'send_welcome': lambda
@@ -72,6 +73,7 @@ Let\'s make magic together ✨',
 (что мне добавить или улучшить? Учту все полезные комментарии и ссылки) \
 Давай творить магию вместе ✨',
         'answer_wisdom': 'Спасибо за вашу мудрость!\nЯ прислушаюсь к вам',
+        'history': 'История гаданий',
 
     }
 }

@@ -44,6 +44,16 @@ async def welcome(call: types.CallbackQuery):
         logging.info(
             f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Стандартные карты | {datetime.now()}')
         await call.message.edit_text(lang[database.get_language(call)]['fortune?'](call), reply_markup=Kb.fortune_menu(call))
+    elif call.data == 'history':
+        if database_fortune.get_history(call):
+            count = 0
+            for i in database_fortune.get_history(call):
+                if count == 10:
+                    return
+                await call.message.answer('%s | %s\n%s' % (i[3], i[1], i[2].replace('\t', '')))
+                count+=1
+        else:
+            await call.message.answer('Ваша история пуста') # заменить текст(англ)
     await call.answer()
 
 
@@ -80,6 +90,7 @@ async def fortune(call: types.CallbackQuery, state: FSMContext):
         await call.message.answer_photo(open(path_img, 'rb'))
         await state.update_data(text=open(path_txt, 'r').read())
         await call.message.answer(open(path_txt, 'r').read()[0:380] + '...', reply_markup=Kb.FULL_TEXT)
+        database_fortune.add_history(call, choose, open(path_txt, 'r').read()[0:150])
         database.minus_energy(call)
         database_fortune.check_first_try(call)
         await state.update_data(card=choose)
@@ -112,6 +123,7 @@ async def fortune(call: types.CallbackQuery, state: FSMContext):
         await call.message.answer_photo(open(path_img, 'rb'))
         await state.update_data(text=open(path_txt, 'r').read())
         await call.message.answer(open(path_txt, 'r').read()[0:380] + '...', reply_markup=Kb.FULL_TEXT)
+        database_fortune.add_history(call, choose, open(path_txt, 'r').read()[0:150])
         database_fortune.check_first_try(call)
         await state.update_data(card=choose)
         await call.message.answer(lang[database.get_language(call)]['question'])
@@ -143,6 +155,7 @@ async def fortune(call: types.CallbackQuery, state: FSMContext):
         await call.message.answer_photo(open(path_img, 'rb'))
         await state.update_data(text=open(path_txt, 'r').read())
         await call.message.answer(open(path_txt, 'r').read()[0:380] + '...', reply_markup=Kb.FULL_TEXT)
+        database_fortune.add_history(call, choose, open(path_txt, 'r').read()[0:150])
         database_fortune.check_first_try(call)
         await state.update_data(card=choose)
         await call.message.answer(lang[database.get_language(call)]['question'])
@@ -174,6 +187,7 @@ async def fortune(call: types.CallbackQuery, state: FSMContext):
         await call.message.answer_photo(open(path_img, 'rb'))
         await state.update_data(text=open(path_txt, 'r').read())
         await call.message.answer(open(path_txt, 'r').read()[0:380] + '...', reply_markup=Kb.FULL_TEXT)
+        database_fortune.add_history(call, choose, open(path_txt, 'r').read()[0:150])
         database_fortune.check_first_try(call)
         await state.update_data(card=choose)
         await call.message.answer(lang[database.get_language(call)]['question'])
@@ -233,7 +247,7 @@ async def listen_wisdom(message: types.Message):
 
 
 def register_handlers_callback(dp: Dispatcher):
-    dp.register_callback_query_handler(welcome, text=['standard', 'authors cards', 'switch language'])
+    dp.register_callback_query_handler(welcome, text=['standard', 'authors cards', 'switch language', 'history'])
     dp.register_callback_query_handler(switch_language, text=['switch english', 'switch russian'])
     dp.register_callback_query_handler(fortune, text=['fortune', 'fortune_back', 'fortune-1d', 'fortune-7d',
                                                       'fortune-30d'])

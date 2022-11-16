@@ -11,7 +11,8 @@ class Kb:
         keyboard = InlineKeyboardMarkup(row_width=2).add(
             InlineKeyboardButton(text=lang[database.get_language(message)]['standard'], callback_data='standard'),
             InlineKeyboardButton(text=lang[database.get_language(message)]['author'], callback_data='authors cards'),
-            InlineKeyboardButton(text=lang[database.get_language(message)]['add_wisdom'], callback_data='add_wisdom')
+            InlineKeyboardButton(text=lang[database.get_language(message)]['add_wisdom'], callback_data='add_wisdom'),
+            InlineKeyboardButton(text=lang[database.get_language(message)]['history'], callback_data='history')
         )
         keyboard.row(
             InlineKeyboardButton(text=lang[database.get_language(message)]['switch'], callback_data='switch language'))
