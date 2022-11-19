@@ -9,8 +9,10 @@ class Kb:
     @staticmethod
     def start_button(message: Message or CallbackQuery):
         keyboard = InlineKeyboardMarkup(row_width=2).add(
-            InlineKeyboardButton(text=lang[database.get_language(message)]['standard'], callback_data='standard'),
-            InlineKeyboardButton(text=lang[database.get_language(message)]['author'], callback_data='authors cards'),
+            InlineKeyboardButton(text=lang[database.get_language(message)]['day_card'], callback_data='fortune-1d'),
+            InlineKeyboardButton(text=lang[database.get_language(message)]['clarify'], callback_data='clarify'),
+            InlineKeyboardButton(text=lang[database.get_language(message)]['relationship'], callback_data='relationship'),
+            InlineKeyboardButton(text=lang[database.get_language(message)]['look_future'], callback_data='look_future'),
             InlineKeyboardButton(text=lang[database.get_language(message)]['add_wisdom'], callback_data='add_wisdom'),
             InlineKeyboardButton(text=lang[database.get_language(message)]['history'], callback_data='history')
         )
@@ -46,6 +48,19 @@ class Kb:
     def only_back(message: Message or CallbackQuery):
         return InlineKeyboardMarkup(row_width=1).add(
             InlineKeyboardButton(text=lang[database.get_language(message)]['back'], callback_data='fortune_back'),
+        )
+
+
+    @staticmethod
+    def history_full(data):
+        return InlineKeyboardMarkup(row_width=1).add(
+            InlineKeyboardButton(text='♾', callback_data=data)
+        )
+
+    @staticmethod
+    def history_back(data):
+        return InlineKeyboardMarkup(row_width=1).add(
+            InlineKeyboardButton(text='⤴️', callback_data=data+'_back')
         )
 
     FULL_TEXT = InlineKeyboardMarkup().add(

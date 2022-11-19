@@ -54,6 +54,20 @@ class User(Database):
         self.cur.execute(f'UPDATE users SET language = "{language}" WHERE user_id = {tg_user.from_user.id}')
         self.conn.commit()
 
+    def get_last_5_history(self, tg_user: Message or CallbackQuery):
+        return [i[0] for i in self.cur.execute(f'SELECT create_at FROM history WHERE user_id = {tg_user.from_user.id} ORDER BY '
+                                               f'create_at').fetchall()][:5]
+
+    def get_last_5_history_back(self, tg_user: Message or CallbackQuery):
+        return [i[0]+'_back' for i in self.cur.execute(f'SELECT create_at FROM history WHERE user_id = {tg_user.from_user.id} ORDER BY '
+                                               f'create_at').fetchall()][:5]
+
+    def get_data_history(self):
+        return [i[0] for i in self.cur.execute('SELECT create_at FROM history').fetchall()]
+
+    def get_data_history_back(self):
+        return [i[0]+'_back' for i in self.cur.execute('SELECT create_at FROM history').fetchall()]
+
     def get_language(self, tg_user: CallbackQuery or Message):
         return self.cur.execute(f'SELECT language FROM users WHERE user_id = {tg_user.from_user.id}').fetchone()[0]
 
