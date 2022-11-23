@@ -8,12 +8,17 @@ from aiogram.types import Message, CallbackQuery
 class Database:
     conn = sqlite3.connect('utils/users.db')
     cur = conn.cursor()
-    cur.execute('CREATE TABLE IF NOT EXISTS users (user_id INT, first_name TEXT, name TEXT, energy INT, language TEXT, '
+    cur.execute('CREATE TABLE IF NOT EXISTS users (id INTEGER NOT NULL PRIMARY KEY, user_id INT, first_name TEXT, '
+                'name TEXT, energy INT, language TEXT, '
                 'day datetime, week datetime, month datetime, is_first_try BOOL, join_at datetime);')
-    cur.execute('CREATE TABLE IF NOT EXISTS fortune (user_id INT, first_name TEXT, card_type TEXT, answer TEXT, '
+    cur.execute('CREATE TABLE IF NOT EXISTS fortune (id INTEGER NOT NULL PRIMARY KEY, user_id INT, first_name TEXT, '
+                'card_type TEXT, answer TEXT, '
                 'create_at datetime);')
-    cur.execute('CREATE TABLE IF NOT EXISTS wisdom (user_id INT, first_name TEXT, message TEXT, create_at datetime);')
-    cur.execute('CREATE TABLE IF NOT EXISTS history(user_id INT, card TEXT, text TEXT, create_at DATETIME);')
+    cur.execute('CREATE TABLE IF NOT EXISTS wisdom (id INTEGER NOT NULL PRIMARY KEY, user_id INT, first_name TEXT, '
+                'message TEXT, create_at datetime);')
+    cur.execute('CREATE TABLE IF NOT EXISTS history(id INTEGER NOT NULL PRIMARY KEY, user_id INT, card TEXT, '
+                'text TEXT, create_at DATETIME);')
+    cur.execute('CREATE TABLE IF NOT EXISTS decks(ru TEXT, en TEXT, reversed BOOL);')
 
     async def get_energy_all(self):
         while True:
@@ -142,3 +147,13 @@ class Wisdom(Database):
         self.cur.execute('INSERT INTO wisdom(user_id, first_name, message, create_at) VALUES(?,?,?,?)',
                          (tg_user.id, tg_user.first_name, msg, datetime.now()))
         self.conn.commit()
+
+
+class Decks(Database):
+    def update_reverse(self, lang: str, reverse: bool, text: str):
+        reverse = False if reverse else True
+        self.cur.execute(f'UPDATE decks SET reversed = {reverse} WHERE {lang} = "{text}"')
+        self.conn.commit()
+
+    def get_reversed(self, lang: str, text: str):
+        return self.cur.execute(f'SELECT reversed FROM decks WHERE {lang} = "{text}"').fetchone()[0]
