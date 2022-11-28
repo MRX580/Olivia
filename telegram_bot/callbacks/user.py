@@ -3,7 +3,7 @@ import os
 import random
 import logging
 
-from datetime import datetime, timedelta
+from datetime import datetime
 from aiogram import types, Dispatcher
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.dispatcher import FSMContext
@@ -14,6 +14,7 @@ from utils.database import User, Fortune, Wisdom, Decks
 from utils.languages import lang
 from utils.decks import decks
 from create_bot import bot, dp
+from handlers.user import Register
 
 logging.basicConfig(filename='bot.log', encoding='utf-8', level=logging.INFO)
 database = User()
@@ -32,9 +33,6 @@ class FortuneState(StatesGroup):
     question = State()
 
 
-class WisdomState(StatesGroup):
-    wisdom = State()
-
 
 async def welcome(call: types.CallbackQuery, state: FSMContext):
     if call.data == 'switch language':
@@ -47,21 +45,6 @@ async def welcome(call: types.CallbackQuery, state: FSMContext):
             f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Стандартные карты | {datetime.now()}')
         await call.message.edit_text(lang[database.get_language(call)]['fortune?'](call),
                                      reply_markup=Kb.fortune_menu(call))
-    elif call.data == 'history':
-        logging.info(
-            f'[{call.from_user.id} | {call.from_user.first_name}] Callback: История карт | {datetime.now()}')
-        async with state.proxy() as data:
-            if database_fortune.get_history(call):
-                count = 0
-                for i in database_fortune.get_history(call):
-                    if count == 5:
-                        return
-                    data[f'history_{i[3]}'] = i[1]
-                    await call.message.answer('%s | %s\n%s' % (i[3], i[1], i[2].replace('\t', '')),
-                                              reply_markup=Kb.history_full(i[3]))
-                    count += 1
-            else:
-                await call.message.answer('Ваша история пуста')  # заменить текст(англ)
     await call.answer()
 
 
@@ -103,42 +86,30 @@ async def get_fortune(call: types.CallbackQuery, state: FSMContext, DIR_IMG, DIR
     await state.update_data(text=open(path_txt, 'r').read())
     await call.message.answer(open(path_txt, 'r').read()[0:380] + '...', reply_markup=Kb.FULL_TEXT)
     database_fortune.add_history(call, card_name, open(path_txt, 'r').read()[0:150])
+    database.minus_energy()
     dp.register_callback_query_handler(full_text_history, text=database.get_data_history())
     dp.register_callback_query_handler(back_text_history, text=database.get_data_history_back())
     database_fortune.check_first_try(call)
     await state.update_data(card=card_name)
-    if random.randint(1,10) in [1, 2]:
+    await state.update_data(thx=False)
+    await state.update_data(full_text=False)
+    if random.randint(1, 10) in [1, 5]:
         database_decks.update_reverse(lang_user, decks[card]['reversed'], card_name)
-    msg = await call.message.answer(lang[lang_user]['question'])
-    await state.update_data(msg=msg)
-    await FortuneState.question.set()
-    await call.answer()
-    await asyncio.sleep(600)
-    try:
-        if datetime.now() - timedelta(minutes=10) < database_fortune.check_session(call) + timedelta(seconds=1):
-            return
-        await call.message.answer(lang[lang_user]['session'], reply_markup=Kb.only_back(call))
-        await FortuneState.next()
-    except IndexError:
-        return
 
 
 async def fortune(call: types.CallbackQuery, state: FSMContext):
     if call.data == 'fortune-1d':
         logging.info(
             f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Гадание раз в день | {datetime.now()}')
-        # if database.get_day(call) <= datetime.now():
-        #     database.update_day(call)
-        # else:
-        #     logging.info(
-        #         f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Нельзя гадать сегодня | {datetime.now()}')
-        #     await call.message.edit_text(lang[database.get_language(call)]['1-d_fail'](call),
-        #                                  reply_markup=Kb.only_back(call))
-        #     return
-        await get_fortune(call, state, DIR_IMG, DIR_TXT, DIR_TXT_REVERSE)
+        if database.get_olivia_energy() > 0:
+            await state.update_data(type_fortune='day_card')
+            await get_fortune(call, state, DIR_IMG, DIR_TXT, DIR_TXT_REVERSE)
+        else:
+            await call.message.answer(f'Мне надо отдохнуть, я погадаю для вас чуть позже..')
     if call.data == 'relationship':
         logging.info(
             f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Гадание в отношениях | {datetime.now()}')
+        await state.update_data(type_fortune='relationship')
         await get_fortune(call, state, DIR_IMG, DIR_TXT_LOVE, DIR_TXT_LOVE_REVERSE)
     if call.data == 'fortune_back':
         logging.info(
@@ -146,20 +117,57 @@ async def fortune(call: types.CallbackQuery, state: FSMContext):
         await call.message.edit_text(lang[database.get_language(call)]['send_welcome'](call),
                                      reply_markup=Kb.start_button(call))
         await call.answer()
+    if call.data == 'fortune_again':
+        logging.info(
+            f'[{call.from_user.id} | {call.from_user.first_name}] Callback: fortune_again | {datetime.now()}')
+        if database.get_olivia_energy() > 0:
+            await call.message.answer(f'Какой ещё вопрос не даёт вам покоя, {database.get_name(call)}?')
+            await Register.input_question.set()
+            await state.update_data(check='False')
+            await asyncio.sleep(30)
+            await check_time(call, state)
+        else:
+            await call.message.answer(f'Мне надо отдохнуть, я погадаю для вас чуть позже..')
+    if call.data == 'thx':
+        logging.info(
+            f'[{call.from_user.id} | {call.from_user.first_name}] Callback: thx | {datetime.now()}')
+        async with state.proxy() as data:
+            if not data['thx']:
+                if not data['full_text']:
+                    await call.message.edit_reply_markup(Kb.FULL_TEXT_WITHOUT_THX)
+                else:
+                    await call.message.edit_reply_markup(Kb.BACK_TEXT_WITHOUT_THX)
+            data['thx'] = True
+            database.plus_energy()
+            await call.message.answer(f'Рада была помочь, {database.get_name(call)}')
+
+
+async def check_time(call: types.CallbackQuery, state: FSMContext):
+    logging.info(
+        f'[{call.from_user.id} | {call.from_user.first_name}] Callback: check_time | {datetime.now()}')
+    data = await state.get_data()
+    if data['check'] == 'False':
+        await call.message.answer('Сконцентрируйте сознание на своем вопросе и вытяните карту...',
+                               reply_markup=Kb.get_card())
+        await state.finish()
 
 
 async def full_text(call: types.CallbackQuery, state: FSMContext):
     if call.data == 'full_text':
+        logging.info(
+            f'[{call.from_user.id} | {call.from_user.first_name}] Callback: full_text | {datetime.now()}')
         data = await state.get_data()
+        keyboard = Kb.BACK_TEXT
+        if data['thx']:
+            keyboard = Kb.BACK_TEXT_WITHOUT_THX
         if len(data['text']) > 4096:
-            await data['msg'].delete()
             await call.message.edit_text(data['text'][:4096])
-            await call.message.answer(data['text'][4096:8192])
+            await call.message.answer(data['text'][4096:8192], reply_markup=keyboard)
             if len(data['text']) > 8192:
-                await call.message.answer(data['text'][8192:12288])
-            await call.message.answer(lang[database.get_language(call)]['question'])
+                await call.message.answer(data['text'][8192:12288], reply_markup=keyboard)
         else:
-            await call.message.edit_text(data['text'])
+            await call.message.edit_text(data['text'], reply_markup=keyboard)
+        await state.update_data(full_text=True)
 
 
 async def full_text_history(call: types.CallbackQuery, state: FSMContext):
@@ -187,37 +195,20 @@ async def question(message: types.Message, state: FSMContext):
     logging.info(f'[{message.from_user.id} | {message.from_user.first_name}] Написал {message.text} в {datetime.now()}')
     await message.bot.send_message(message.chat.id, lang[database.get_language(message)]['question2'])
     data = await state.get_data()
-    database_fortune.create_fortune(message, data['card'], message.text)
+    database_fortune.create_fortune(message, data['card'], message.text, data['type_fortune'])
     database_fortune.check_session(message)
     await bot.send_message(message.chat.id, lang[database.get_language(message)]['send_welcome'](message),
                            reply_markup=Kb.start_button(message))
     await FortuneState.next()
 
 
-async def add_wisdom(call: types.CallbackQuery):
-    if call.data == 'add_wisdom':
-        logging.info(
-            f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Добавить мудрости | {datetime.now()}')
-        await call.message.answer(lang[database.get_language(call)]['add_wisdom_text'])
-        await WisdomState.wisdom.set()
-
-
-async def listen_wisdom(message: types.Message):
-    logging.info(f'[{message.from_user.id} | {message.from_user.first_name}] Написал {message.text} в {datetime.now()}')
-    database_wisdom.add_wisdom(message, message.text)
-    await bot.send_message(message.chat.id, lang[database.get_language(message)]['answer_wisdom'])
-    await bot.send_message(message.chat.id, lang[database.get_language(message)]['send_welcome'](message),
-                           reply_markup=Kb.start_button(message))
-    await WisdomState.next()
-
 
 def register_handlers_callback(dp: Dispatcher):
     dp.register_callback_query_handler(welcome, text=['day_card', 'authors ru', 'switch language', 'history'])
     dp.register_callback_query_handler(switch_language, text=['switch english', 'switch russian'])
-    dp.register_callback_query_handler(fortune, text=['fortune', 'fortune_back', 'fortune-1d', 'relationship'])
-    dp.register_callback_query_handler(add_wisdom, text=['add_wisdom'])
-    dp.register_callback_query_handler(full_text, text=['full_text'], state=FortuneState.question)
+    dp.register_callback_query_handler(fortune, text=['fortune', 'fortune_back', 'fortune-1d', 'relationship',
+                                                      'fortune_again', 'thx'])
+    dp.register_callback_query_handler(full_text, text=['full_text'])
     dp.register_callback_query_handler(full_text_history, text=database.get_data_history())
     dp.register_callback_query_handler(back_text_history, text=database.get_data_history_back())
     dp.register_message_handler(question, state=FortuneState.question)
-    dp.register_message_handler(listen_wisdom, state=WisdomState.wisdom)
