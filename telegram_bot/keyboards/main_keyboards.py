@@ -70,21 +70,21 @@ class Kb:
 
     FULL_TEXT = InlineKeyboardMarkup(row_width=1).add(
         InlineKeyboardButton(text='Узнать больше', callback_data='full_text'),
-        InlineKeyboardButton(text='Погадать еще раз', callback_data='fortune_again'),
+        InlineKeyboardButton(text='Погадать ещё раз', callback_data='fortune_again'),
         InlineKeyboardButton(text='Спасибо', callback_data='thx'),
     )
 
     FULL_TEXT_WITHOUT_THX = InlineKeyboardMarkup(row_width=1).add(
         InlineKeyboardButton(text='Узнать больше', callback_data='full_text'),
-        InlineKeyboardButton(text='Погадать еще раз', callback_data='fortune_again'),
+        InlineKeyboardButton(text='Погадать ещё раз', callback_data='fortune_again'),
     )
 
     BACK_TEXT_WITHOUT_THX = InlineKeyboardMarkup(row_width=1).add(
-        InlineKeyboardButton(text='Погадать еще раз', callback_data='fortune_again'),
+        InlineKeyboardButton(text='Погадать ещё раз', callback_data='fortune_again'),
     )
 
     BACK_TEXT = InlineKeyboardMarkup(row_width=1).add(
-        InlineKeyboardButton(text='Погадать еще раз', callback_data='fortune_again'),
+        InlineKeyboardButton(text='Погадать ещё раз', callback_data='fortune_again'),
         InlineKeyboardButton(text='Спасибо', callback_data='thx'),
     )
 

@@ -112,8 +112,6 @@ async def listen_wisdom(message: types.Message):
     logging.info(f'[{message.from_user.id} | {message.from_user.first_name}] Написал {message.text} в {datetime.now()}')
     database_wisdom.add_wisdom(message, message.text)
     await bot.send_message(message.chat.id, lang[database.get_language(message)]['answer_wisdom'])
-    await bot.send_message(message.chat.id, lang[database.get_language(message)]['send_welcome'](message),
-                           reply_markup=Kb.start_button(message))
     await WisdomState.next()
 
 

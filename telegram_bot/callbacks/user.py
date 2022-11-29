@@ -1,5 +1,6 @@
 import asyncio
 import os
+import io
 import random
 import logging
 
@@ -10,7 +11,7 @@ from aiogram.dispatcher import FSMContext
 from PIL import Image
 
 from keyboards.main_keyboards import Kb
-from utils.database import User, Fortune, Wisdom, Decks
+from utils.database import User, Fortune, Decks
 from utils.languages import lang
 from utils.decks import decks
 from create_bot import bot, dp
@@ -19,7 +20,6 @@ from handlers.user import Register
 logging.basicConfig(filename='bot.log', encoding='utf-8', level=logging.INFO)
 database = User()
 database_fortune = Fortune()
-database_wisdom = Wisdom()
 database_decks = Decks()
 
 DIR_IMG = f'static/img/decks_1'
@@ -77,11 +77,13 @@ async def get_fortune(call: types.CallbackQuery, state: FSMContext, DIR_IMG, DIR
     path_img = os.path.join(DIR_IMG, f'{card}.jpg')
     path_txt = os.path.join(DIR_TXT(lang_user), f'{card_name}.txt')
     im = Image.open(open(path_img, 'rb'))
+    buffer = io.BytesIO()
     if database_decks.get_reversed(lang_user, card_name):
         path_txt = os.path.join(DIR_REVERSE(lang_user), f'{card_name}.txt')
         im = im.rotate(180)
-        im.save(path_img)
-    await call.message.answer_photo(open(path_img, 'rb'))
+        im.save(buffer, format='JPEG', quality=75)
+    im.save(buffer, format='JPEG', quality=75)
+    await call.message.answer_photo(buffer.getbuffer())
     im.close()
     await state.update_data(text=open(path_txt, 'r').read())
     await call.message.answer(open(path_txt, 'r').read()[0:380] + '...', reply_markup=Kb.FULL_TEXT)
