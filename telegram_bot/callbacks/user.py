@@ -1,46 +1,29 @@
-import asyncio
-import os
-import io
-import random
 import logging
 
 from datetime import datetime
 from aiogram import types, Dispatcher
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.dispatcher import FSMContext
-from PIL import Image
 
 from keyboards.main_keyboards import Kb
 from utils.database import User, Fortune, Decks
 from utils.languages import lang
-from utils.decks import decks
-from create_bot import bot, dp
-from handlers.user import Register
+from create_bot import bot
 
 logging.basicConfig(filename='bot.log', encoding='utf-8', level=logging.INFO)
 database = User()
 database_fortune = Fortune()
 database_decks = Decks()
 
-DIR_IMG = f'static/img/decks_1'
 DIR_TXT = lambda lang: f'static/text/{lang}/day_card'
-DIR_TXT_REVERSE = lambda lang: f'static/text/{lang}/reverse'
-DIR_TXT_LOVE = lambda lang: f'static/text/{lang}/relationship'
-DIR_TXT_LOVE_REVERSE = lambda lang: f'static/text/{lang}/reverse_relationship'
 
 
 class FortuneState(StatesGroup):
     question = State()
 
 
-
-async def welcome(call: types.CallbackQuery, state: FSMContext):
-    if call.data == 'switch language':
-        logging.info(
-            f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Смена языка | {datetime.now()}')
-        await call.message.edit_text('Выбери язык\n'
-                                     'Choose language', reply_markup=Kb.SWITCH_LANGUAGE)
-    elif call.data == 'day_card':
+async def welcome(call: types.CallbackQuery):
+    if call.data == 'day_card':
         logging.info(
             f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Стандартные карты | {datetime.now()}')
         await call.message.edit_text(lang[database.get_language(call)]['fortune?'](call),
@@ -53,105 +36,27 @@ async def switch_language(call: types.CallbackQuery):
         logging.info(
             f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Смена языка на английский | {datetime.now()}')
         database.switch_language('en', call)
-        await call.message.answer('The language has been successfully changed')
-        await call.message.answer(lang[database.get_language(call)]['send_welcome'](call),
-                                  reply_markup=Kb.start_button(call))
+        await call.message.edit_text(lang[database.get_language(call)]['start'],
+                                     reply_markup=Kb.LANGUAGES)
     if call.data == 'switch russian':
         logging.info(
             f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Смена языка на русский | {datetime.now()}')
         database.switch_language('ru', call)
-        await call.message.answer('Язык был успешно изменен')
-        await call.message.answer(lang[database.get_language(call)]['send_welcome'](call),
-                                  reply_markup=Kb.start_button(call))
+        await call.message.edit_text(lang[database.get_language(call)]['start'],
+                                     reply_markup=Kb.LANGUAGES)
+    if call.data == 'switch english_command':
+        logging.info(
+            f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Смена языка на английский command | {datetime.now()}')
+        database.switch_language('en', call)
+        await call.message.edit_text(lang[database.get_language(call)]['choose_language'],
+                                     reply_markup=Kb.LANGUAGES_COMMAND)
+    if call.data == 'switch russian_command':
+        logging.info(
+            f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Смена языка на русский command | {datetime.now()}')
+        database.switch_language('ru', call)
+        await call.message.edit_text(lang[database.get_language(call)]['choose_language'],
+                                     reply_markup=Kb.LANGUAGES_COMMAND)
     await call.answer()
-
-
-async def get_fortune(call: types.CallbackQuery, state: FSMContext, DIR_IMG, DIR_TXT, DIR_REVERSE):
-    database.get_name(call)
-    await call.message.answer_animation('https://media.giphy.com/media/3oKIPolAotPmdjjVK0/giphy.gif')
-    await asyncio.sleep(2)
-    rand_card = random.randint(0, 77)
-    lang_user = database.get_language(call)
-    card = os.listdir(DIR_IMG)[rand_card][:-4]
-    card_name = decks[card][lang_user]
-    path_img = os.path.join(DIR_IMG, f'{card}.jpg')
-    path_txt = os.path.join(DIR_TXT(lang_user), f'{card_name}.txt')
-    im = Image.open(open(path_img, 'rb'))
-    buffer = io.BytesIO()
-    if database_decks.get_reversed(lang_user, card_name):
-        path_txt = os.path.join(DIR_REVERSE(lang_user), f'{card_name}.txt')
-        im = im.rotate(180)
-        im.save(buffer, format='JPEG', quality=75)
-    im.save(buffer, format='JPEG', quality=75)
-    await call.message.answer_photo(buffer.getbuffer())
-    im.close()
-    await state.update_data(text=open(path_txt, 'r').read())
-    await call.message.answer(open(path_txt, 'r').read()[0:380] + '...', reply_markup=Kb.FULL_TEXT)
-    database_fortune.add_history(call, card_name, open(path_txt, 'r').read()[0:150])
-    database.minus_energy()
-    dp.register_callback_query_handler(full_text_history, text=database.get_data_history())
-    dp.register_callback_query_handler(back_text_history, text=database.get_data_history_back())
-    database_fortune.check_first_try(call)
-    await state.update_data(card=card_name)
-    await state.update_data(thx=False)
-    await state.update_data(full_text=False)
-    if random.randint(1, 10) in [1, 5]:
-        database_decks.update_reverse(lang_user, decks[card]['reversed'], card_name)
-
-
-async def fortune(call: types.CallbackQuery, state: FSMContext):
-    if call.data == 'fortune-1d':
-        logging.info(
-            f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Гадание раз в день | {datetime.now()}')
-        if database.get_olivia_energy() > 0:
-            await state.update_data(type_fortune='day_card')
-            await get_fortune(call, state, DIR_IMG, DIR_TXT, DIR_TXT_REVERSE)
-        else:
-            await call.message.answer(f'Мне надо отдохнуть, я погадаю для вас чуть позже..')
-    if call.data == 'relationship':
-        logging.info(
-            f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Гадание в отношениях | {datetime.now()}')
-        await state.update_data(type_fortune='relationship')
-        await get_fortune(call, state, DIR_IMG, DIR_TXT_LOVE, DIR_TXT_LOVE_REVERSE)
-    if call.data == 'fortune_back':
-        logging.info(
-            f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Назад(фортуна) | {datetime.now()}')
-        await call.message.edit_text(lang[database.get_language(call)]['send_welcome'](call),
-                                     reply_markup=Kb.start_button(call))
-        await call.answer()
-    if call.data == 'fortune_again':
-        logging.info(
-            f'[{call.from_user.id} | {call.from_user.first_name}] Callback: fortune_again | {datetime.now()}')
-        if database.get_olivia_energy() > 0:
-            await call.message.answer(f'Какой ещё вопрос не даёт вам покоя, {database.get_name(call)}?')
-            await Register.input_question.set()
-            await state.update_data(check='False')
-            await asyncio.sleep(30)
-            await check_time(call, state)
-        else:
-            await call.message.answer(f'Мне надо отдохнуть, я погадаю для вас чуть позже..')
-    if call.data == 'thx':
-        logging.info(
-            f'[{call.from_user.id} | {call.from_user.first_name}] Callback: thx | {datetime.now()}')
-        async with state.proxy() as data:
-            if not data['thx']:
-                if not data['full_text']:
-                    await call.message.edit_reply_markup(Kb.FULL_TEXT_WITHOUT_THX)
-                else:
-                    await call.message.edit_reply_markup(Kb.BACK_TEXT_WITHOUT_THX)
-            data['thx'] = True
-            database.plus_energy()
-            await call.message.answer(f'Рада была помочь, {database.get_name(call)}')
-
-
-async def check_time(call: types.CallbackQuery, state: FSMContext):
-    logging.info(
-        f'[{call.from_user.id} | {call.from_user.first_name}] Callback: check_time | {datetime.now()}')
-    data = await state.get_data()
-    if data['check'] == 'False':
-        await call.message.answer('Сконцентрируйте сознание на своем вопросе и вытяните карту...',
-                               reply_markup=Kb.get_card())
-        await state.finish()
 
 
 async def full_text(call: types.CallbackQuery, state: FSMContext):
@@ -159,16 +64,13 @@ async def full_text(call: types.CallbackQuery, state: FSMContext):
         logging.info(
             f'[{call.from_user.id} | {call.from_user.first_name}] Callback: full_text | {datetime.now()}')
         data = await state.get_data()
-        keyboard = Kb.BACK_TEXT
-        if data['thx']:
-            keyboard = Kb.BACK_TEXT_WITHOUT_THX
         if len(data['text']) > 4096:
             await call.message.edit_text(data['text'][:4096])
-            await call.message.answer(data['text'][4096:8192], reply_markup=keyboard)
+            await call.message.answer(data['text'][4096:8192])
             if len(data['text']) > 8192:
-                await call.message.answer(data['text'][8192:12288], reply_markup=keyboard)
+                await call.message.answer(data['text'][8192:12288])
         else:
-            await call.message.edit_text(data['text'], reply_markup=keyboard)
+            await call.message.edit_text(data['text'])
         await state.update_data(full_text=True)
 
 
@@ -204,12 +106,10 @@ async def question(message: types.Message, state: FSMContext):
     await FortuneState.next()
 
 
-
 def register_handlers_callback(dp: Dispatcher):
     dp.register_callback_query_handler(welcome, text=['day_card', 'authors ru', 'switch language', 'history'])
-    dp.register_callback_query_handler(switch_language, text=['switch english', 'switch russian'])
-    dp.register_callback_query_handler(fortune, text=['fortune', 'fortune_back', 'fortune-1d', 'relationship',
-                                                      'fortune_again', 'thx'])
+    dp.register_callback_query_handler(switch_language, text=['switch english', 'switch russian', 'switch english_command',
+                                                              'switch russian_command'], state='*')
     dp.register_callback_query_handler(full_text, text=['full_text'])
     dp.register_callback_query_handler(full_text_history, text=database.get_data_history())
     dp.register_callback_query_handler(back_text_history, text=database.get_data_history_back())

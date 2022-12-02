@@ -1,4 +1,4 @@
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, Message, CallbackQuery
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, Message, CallbackQuery, ReplyKeyboardMarkup
 from utils.languages import lang
 from utils.database import User
 
@@ -57,38 +57,51 @@ class Kb:
         )
 
     @staticmethod
+    def text_full(message: Message or CallbackQuery):
+        return InlineKeyboardMarkup(row_width=1).add(
+            InlineKeyboardButton(text=lang[database.get_language(message)]['know_more'], callback_data='full_text')
+        )
+
+    @staticmethod
     def history_back(data):
         return InlineKeyboardMarkup(row_width=1).add(
             InlineKeyboardButton(text='⤴️', callback_data=data+'_back')
         )
 
     @staticmethod
-    def get_card():
+    def get_card(message: Message or CallbackQuery):
         return InlineKeyboardMarkup(row_width=1).add(
-            InlineKeyboardButton(text='Вытянуть карту', callback_data='fortune-1d')
+            InlineKeyboardButton(text=lang[database.get_language(message)]['fortune'], callback_data='fortune-1d')
         )
 
-    FULL_TEXT = InlineKeyboardMarkup(row_width=1).add(
-        InlineKeyboardButton(text='Узнать больше', callback_data='full_text'),
-        InlineKeyboardButton(text='Погадать ещё раз', callback_data='fortune_again'),
-        InlineKeyboardButton(text='Спасибо', callback_data='thx'),
+    LANGUAGES = InlineKeyboardMarkup(row_width=2).add(
+        InlineKeyboardButton(text='🇺🇸', callback_data='switch english'),
+        InlineKeyboardButton(text='🇷🇺', callback_data='switch russian'),
     )
 
-    FULL_TEXT_WITHOUT_THX = InlineKeyboardMarkup(row_width=1).add(
-        InlineKeyboardButton(text='Узнать больше', callback_data='full_text'),
-        InlineKeyboardButton(text='Погадать ещё раз', callback_data='fortune_again'),
+
+    LANGUAGES_COMMAND = InlineKeyboardMarkup(row_width=2).add(
+        InlineKeyboardButton(text='🇺🇸', callback_data='switch english_command'),
+        InlineKeyboardButton(text='🇷🇺', callback_data='switch russian_command'),
     )
 
-    BACK_TEXT_WITHOUT_THX = InlineKeyboardMarkup(row_width=1).add(
-        InlineKeyboardButton(text='Погадать ещё раз', callback_data='fortune_again'),
+class KbReply:
+    @staticmethod
+    def GET_CARD(message: Message or CallbackQuery):
+        return ReplyKeyboardMarkup(resize_keyboard=True).add(
+        lang[database.get_language(message)]['fortune']
     )
 
-    BACK_TEXT = InlineKeyboardMarkup(row_width=1).add(
-        InlineKeyboardButton(text='Погадать ещё раз', callback_data='fortune_again'),
-        InlineKeyboardButton(text='Спасибо', callback_data='thx'),
+    @staticmethod
+    def FULL_TEXT(message: Message or CallbackQuery):
+        return ReplyKeyboardMarkup(resize_keyboard=True, row_width=1).add(
+        lang[database.get_language(message)]['fortune_again'],
+        lang[database.get_language(message)]['thx'],
     )
 
-    SWITCH_LANGUAGE = InlineKeyboardMarkup(row_width=2).add(
-        InlineKeyboardButton(text='English 🇺🇸', callback_data='switch english'),
-        InlineKeyboardButton(text='Русский 🇷🇺', callback_data='switch russian'),
+    @staticmethod
+    def FULL_TEXT_WITHOUT_THX(message: Message or CallbackQuery):
+        return ReplyKeyboardMarkup(resize_keyboard=True).add(
+        lang[database.get_language(message)]['fortune_again']
     )
+

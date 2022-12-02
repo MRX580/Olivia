@@ -1,4 +1,3 @@
-import os
 decks = {
     'card_1': {
         'ru': 'Шут',
@@ -322,72 +321,77 @@ decks = {
         },
     'card_65': {
             'ru': 'Туз Пентаклей',
-            'en': 'Ace of Coins',
+            'en': 'Ace of Pentacles',
             'reversed': False,
         },
     'card_66': {
             'ru': 'Двойка Пентаклей',
-            'en': 'Two of Coins',
+            'en': 'Two of Pentacles',
             'reversed': False,
         },
     'card_67': {
             'ru': 'Тройка Пентаклей',
-            'en': 'Three of Coins',
+            'en': 'Three of Pentacles',
             'reversed': False,
         },
     'card_68': {
             'ru': 'Четверка Пентаклей',
-            'en': 'Four of Coins',
+            'en': 'Four of Pentacles',
             'reversed': False,
         },
     'card_69': {
             'ru': 'Пятерка Пентаклей',
-            'en': 'Five of Coins',
+            'en': 'Five of Pentacles',
             'reversed': False,
         },
     'card_70': {
             'ru': 'Шестерка Пентаклей',
-            'en': 'Six of Coins',
+            'en': 'Six of Pentacles',
             'reversed': False,
         },
     'card_71': {
             'ru': 'Семерка Пентаклей',
-            'en': 'Seven of Coins',
+            'en': 'Seven of Pentacles',
             'reversed': False,
         },
     'card_72': {
             'ru': 'Восьмерка Пентаклей',
-            'en': 'Eight of Coins',
+            'en': 'Eight of Pentacles',
             'reversed': False,
         },
     'card_73': {
             'ru': 'Девятка Пентаклей',
-            'en': 'Nine of Coins',
+            'en': 'Nine of Pentacles',
             'reversed': False,
         },
     'card_74': {
             'ru': 'Десятка Пентаклей',
-            'en': 'Ten of Coins',
+            'en': 'Ten of Pentacles',
             'reversed': False,
         },
     'card_75': {
             'ru': 'Паж Пентаклей',
-            'en': 'Page of Coins',
+            'en': 'Page of Pentacles',
             'reversed': False,
         },
     'card_76': {
             'ru': 'Рыцарь Пентаклей',
-            'en': 'Knight of Coins',
+            'en': 'Knight of Pentacles',
             'reversed': False,
         },
     'card_77': {
             'ru': 'Дама Пентаклей',
-            'en': 'Queen of Coins',
+            'en': 'Queen of Pentacles',
             'reversed': False,
         },
     'card_78': {
             'ru': 'Король Пентаклей',
-            'en': 'King of Coins',
+            'en': 'King of Pentacles',
             'reversed': False,
         },
 }
+# import os
+# for i in os.listdir('../static/text/ru/reverse'):
+#     if '\xa0' in i:
+#         sym = '\xa0'
+#         os.rename(f'../static/text/ru/reverse/{i}', f'../static/text/ru/reverse/{i.replace(sym, " ")}')

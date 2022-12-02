@@ -1,21 +1,28 @@
 import asyncio
 import logging
+import random
+import os
+import io
 
+from PIL import Image
 from aiogram import types, Dispatcher
 from aiogram.dispatcher.filters.state import State, StatesGroup
+from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher import FSMContext
 from datetime import datetime
 
 from create_bot import bot
-from keyboards.main_keyboards import Kb
-from utils.database import User, Fortune, Wisdom
-from utils.languages import lang
+from keyboards.main_keyboards import Kb, KbReply
+from utils.database import User, Fortune, Wisdom, Decks
+from utils.languages import lang, all_lang
+from utils.decks import decks
 
 
 logging.basicConfig(filename='bot.log', encoding='utf-8', level=logging.INFO)
 database = User()
 database_fortune = Fortune()
 database_wisdom = Wisdom()
+database_decks = Decks()
 
 
 class Register(StatesGroup):
@@ -32,11 +39,10 @@ async def welcome(message: types.Message):
         f'[{message.from_user.id} | {message.from_user.first_name}] Написал {message.text} в {datetime.now()}')
     if database.is_user_exists(message):
         await bot.send_message(message.chat.id, lang[database.get_language(message)]['send_welcome'](message),
-                               reply_markup=Kb.start_button(message))
+                               reply_markup=KbReply.GET_CARD(message))
     else:
         await Register.input_name.set()
-        await bot.send_message(message.chat.id, 'Всегда рада новому гостю. Вам тут рады. Как я могу называть Вас, '
-                                                'гость?🦄')
+        await bot.send_message(message.chat.id, lang[database.get_language(message)]['start'], reply_markup=Kb.LANGUAGES)
 
 
 async def check_time(message: types.Message, state: FSMContext):
@@ -45,8 +51,8 @@ async def check_time(message: types.Message, state: FSMContext):
         f'[{message.from_user.id} | {message.from_user.first_name}] Callback: check_time | {datetime.now()}')
 
     if data['check'] == 'False':
-        await bot.send_message(message.chat.id, 'Сконцентрируйте сознание на своем вопросе и вытяните карту...',
-                               reply_markup=Kb.get_card())
+        await bot.send_message(message.chat.id, lang[database.get_language(message)]['get_card'],
+                               reply_markup=KbReply.GET_CARD(message))
     await state.finish()
 
 
@@ -54,11 +60,90 @@ async def get_name(message: types.Message, state: FSMContext):
     logging.info(
         f'[{message.from_user.id} | {message.from_user.first_name}] Написал {message.text} в {datetime.now()}')
     database.create_user(message, message.text)
-    await bot.send_message(message.chat.id, f'Какой вопрос не даёт вам покоя, {message.text}?')
+    await bot.send_message(message.chat.id, lang[database.get_language(message)]['question_start'](message))
     await Register.input_question.set()
     await state.update_data(check='False')
     await asyncio.sleep(30)
     await check_time(message, state)
+
+
+async def get_fortune(message: types.Message, state: FSMContext,
+                      DIR_IMG='static/img/decks_1',
+                      DIR_TXT=lambda lang: f'static/text/{lang}/day_card',
+                      DIR_REVERSE=lambda lang: f'static/text/{lang}/reverse'):
+    if database.get_olivia_energy() > 0:
+        if message.text == 'Погадать ещё раз':
+            await bot.send_message(message.chat.id, lang[database.get_language(message)]['question_again'](message), reply_markup=types.ReplyKeyboardRemove()
+)
+            await Register.input_question.set()
+            await state.update_data(check='False')
+            await asyncio.sleep(30)
+            await check_time(message, state)
+            return
+    else:
+        await bot.send_message(message.chat.id, lang[database.get_language(message)]['no_energy'])
+        return
+    database.get_name(message)
+    await bot.send_animation(message.chat.id, 'https://media.giphy.com/media/3oKIPolAotPmdjjVK0/giphy.gif')
+    await asyncio.sleep(2)
+    rand_card = random.randint(0, 77)
+    lang_user = database.get_language(message)
+    card = os.listdir(DIR_IMG)[rand_card][:-4]
+    card_name = decks[card][lang_user]
+    path_img = os.path.join(DIR_IMG, f'{card}.jpg')
+    path_txt = os.path.join(DIR_TXT(lang_user), f'{card_name}.txt')
+    im = Image.open(open(path_img, 'rb'))
+    buffer = io.BytesIO()
+    if database_decks.get_reversed(lang_user, card_name):
+        path_txt = os.path.join(DIR_REVERSE(lang_user), f'{card_name}.txt')
+        im = im.rotate(180)
+        im.save(buffer, format='JPEG', quality=75)
+    im.save(buffer, format='JPEG', quality=75)
+    await bot.send_photo(message.chat.id, buffer.getbuffer(), reply_markup=KbReply.FULL_TEXT(message))
+    im.close()
+    await state.update_data(text=open(path_txt, 'r').read())
+    msg = await bot.send_message(message.chat.id, open(path_txt, 'r').read()[:380] + '...', reply_markup=Kb.text_full(message))
+    await state.update_data(msg=msg)
+    database_fortune.add_history(message, card_name, open(path_txt, 'r').read()[0:150])
+    database.minus_energy()
+    database_fortune.check_first_try(message)
+    await state.update_data(card=card_name)
+    await state.update_data(thx=False)
+    await state.update_data(full_text=False)
+    if random.randint(1, 10) in [1, 5]:
+        database_decks.update_reverse(lang_user, decks[card]['reversed'], card_name)
+
+
+async def thanks(message: types.Message, state: FSMContext):
+    logging.info(
+        f'[{message.from_user.id} | {message.from_user.first_name}] Callback: thx | {datetime.now()}')
+    async with state.proxy() as data:
+        if not data['thx']:
+            data['thx'] = True
+            database.plus_energy()
+            if not data['full_text']:
+                await bot.send_message(message.chat.id, lang[database.get_language(message)]['thanks'](message),
+                                       reply_markup=KbReply.FULL_TEXT_WITHOUT_THX(message))
+            else:
+                await bot.send_message(message.chat.id, lang[database.get_language(message)]['thanks'](message), reply_markup=KbReply.FULL_TEXT_WITHOUT_THX(message))
+
+
+async def full_text(message: types.Message, state: FSMContext):
+    logging.info(
+        f'[{message.from_user.id} | {message.from_user.first_name}] Callback: full_text | {datetime.now()}')
+    data = await state.get_data()
+    keyboard = KbReply.FULL_TEXT(message)
+    if data['thx']:
+        keyboard = KbReply.FULL_TEXT_WITHOUT_THX(message)
+    await bot.delete_message(message.chat.id, data['msg']['message_id'])
+    if len(data['text']) > 4096:
+        await bot.send_message(message.chat.id, data['text'][:4096])
+        await bot.send_message(message.chat.id, data['text'][4096:8192], reply_markup=keyboard)
+        if len(data['text']) > 8192:
+            await bot.send_message(message.chat.id, data['text'][8192:12288], reply_markup=keyboard)
+    else:
+        await bot.send_message(message.chat.id, data['text'], reply_markup=keyboard)
+    await state.update_data(full_text=True)
 
 
 async def get_question(message: types.Message, state: FSMContext):
@@ -66,11 +151,22 @@ async def get_question(message: types.Message, state: FSMContext):
         f'[{message.from_user.id} | {message.from_user.first_name}] Написал {message.text} в {datetime.now()}')
     await state.update_data(check='True')
     database.add_question(message, message.text)
-    await bot.send_message(message.chat.id, 'Давайте посмотрим, что скажут карты?', reply_markup=Kb.get_card())
+    await bot.send_message(message.chat.id, lang[database.get_language(message)]['what_say'],
+                           reply_markup=KbReply.GET_CARD(message))
     await state.finish()
 
 
+async def change_language(message: types.Message):
+    logging.info(
+        f'[{message.from_user.id} | {message.from_user.first_name}] command: /language | {datetime.now()}')
+
+    await bot.send_message(message.chat.id, lang[database.get_language(message)]['choose_language'],
+                           reply_markup=Kb.LANGUAGES_COMMAND)
+
+
 async def about_olivia(message: types.Message):
+    logging.info(
+        f'[{message.from_user.id} | {message.from_user.first_name}] command: /intro | {datetime.now()}')
     await bot.send_message(message.chat.id, '''
     Olivia, the mind and soul healer
 White Witch
@@ -88,7 +184,7 @@ I’m here to let my community know when something is going wrong and then direc
 
 async def history(message: types.Message, state: FSMContext):
     logging.info(
-        f'[{message.from_user.id} | {message.from_user.first_name}] Callback: История карт | {datetime.now()}')
+        f'[{message.from_user.id} | {message.from_user.first_name}] command: /memories | {datetime.now()}')
     async with state.proxy() as data:
         if database_fortune.get_history(message):
             count = 0
@@ -100,10 +196,12 @@ async def history(message: types.Message, state: FSMContext):
                                           reply_markup=Kb.history_full(i[3]))
                 count += 1
         else:
-            await bot.send_message(message.chat.id, 'Ваша история пуста')  # заменить текст(англ)
+            await bot.send_message(message.chat.id, lang[database.get_language(message)]['empty_history'])
 
 
 async def add_wisdom(message: types.Message):
+    logging.info(
+        f'[{message.from_user.id} | {message.from_user.first_name}] command: /addwisdom | {datetime.now()}')
     await bot.send_message(message.chat.id, lang[database.get_language(message)]['add_wisdom_text'])
     await WisdomState.wisdom.set()
 
@@ -136,8 +234,12 @@ def register_handlers_client(dp: Dispatcher):
     dp.register_message_handler(about_olivia, commands=['intro'])
     dp.register_message_handler(history, commands=['memories'])
     dp.register_message_handler(add_wisdom, commands=['addwisdom'])
+    dp.register_message_handler(change_language, commands=['language'])
     dp.register_message_handler(get_name, state=Register.input_name)
     dp.register_message_handler(get_question, state=Register.input_question)
     dp.register_message_handler(listen_wisdom, state=WisdomState.wisdom)
     dp.register_message_handler(send_message, commands=['send'])
+    dp.register_message_handler(get_fortune, Text(equals=all_lang['get_card'] + all_lang['get_card_again']))
+    dp.register_message_handler(full_text, Text(equals=all_lang['know_more']))
+    dp.register_message_handler(thanks, Text(equals=all_lang['thx']))
     dp.register_message_handler(text)
