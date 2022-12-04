@@ -9,6 +9,7 @@ from keyboards.main_keyboards import Kb
 from utils.database import User, Fortune, Decks
 from utils.languages import lang
 from create_bot import bot
+from handlers.user import Session
 
 logging.basicConfig(filename='bot.log', encoding='utf-8', level=logging.INFO)
 database = User()
@@ -110,7 +111,7 @@ def register_handlers_callback(dp: Dispatcher):
     dp.register_callback_query_handler(welcome, text=['day_card', 'authors ru', 'switch language', 'history'])
     dp.register_callback_query_handler(switch_language, text=['switch english', 'switch russian', 'switch english_command',
                                                               'switch russian_command'], state='*')
-    dp.register_callback_query_handler(full_text, text=['full_text'])
+    dp.register_callback_query_handler(full_text, text=['full_text'], state=Session.session)
     dp.register_callback_query_handler(full_text_history, text=database.get_data_history())
     dp.register_callback_query_handler(back_text_history, text=database.get_data_history_back())
     dp.register_message_handler(question, state=FortuneState.question)

@@ -71,15 +71,18 @@ class User(Database):
                                                                                                text, datetime.now()))
         self.conn.commit()
 
-    def create_user(self, tg_user: Message,
-                    name: str):
+    def create_user(self, tg_user: Message):
         tg_user = tg_user.from_user
         time = datetime.now()
         self.cur.execute('INSERT INTO users(user_id, first_name, name, energy, language, attempts_used, last_attempt, '
                          'is_first_try, join_at) '
                          'VALUES(?,?,?,?,?,?,?,?,?)',
-                         (tg_user.id, tg_user.first_name, name, 100, 'ru', 0, time, False, time))
+                         (tg_user.id, tg_user.first_name, '', 100, 'ru', 0, time, False, time))
         self.cur.execute(f'UPDATE olivia SET max_energy = {self.get_all_users() * 3}')
+        self.conn.commit()
+
+    def update_name(self, tg_user: Message):
+        self.cur.execute(f'UPDATE users SET name = "{tg_user.text}" WHERE user_id = {tg_user.from_user.id}')
         self.conn.commit()
 
     def switch_language(self, language: str,
@@ -112,15 +115,6 @@ class User(Database):
 
     def get_name(self, tg_user: CallbackQuery or Message):
         return self.cur.execute(f'SELECT name FROM users WHERE user_id = {tg_user.from_user.id}').fetchone()[0]
-
-    def get_day(self, tg_user: CallbackQuery or Message):
-        return self.convert_time(self.cur.execute(f'SELECT day FROM users WHERE user_id = {tg_user.from_user.id}').fetchone()[0])
-
-    def get_week(self, tg_user: CallbackQuery or Message):
-        return self.convert_time(self.cur.execute(f'SELECT week FROM users WHERE user_id = {tg_user.from_user.id}').fetchone()[0])
-
-    def get_month(self, tg_user: CallbackQuery or Message):
-        return self.convert_time(self.cur.execute(f'SELECT month FROM users WHERE user_id = {tg_user.from_user.id}').fetchone()[0])
 
     def minus_energy(self):
         self.cur.execute(f'UPDATE olivia SET energy = energy-1')

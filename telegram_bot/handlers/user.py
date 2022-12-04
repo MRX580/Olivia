@@ -29,6 +29,10 @@ class Register(StatesGroup):
     input_name = State()
     input_question = State()
 
+class Session(StatesGroup):
+    session = State()
+    get_card = State()
+
 
 class WisdomState(StatesGroup):
     wisdom = State()
@@ -40,26 +44,31 @@ async def welcome(message: types.Message):
     if database.is_user_exists(message):
         await bot.send_message(message.chat.id, lang[database.get_language(message)]['send_welcome'](message),
                                reply_markup=KbReply.GET_CARD(message))
+        await Session.get_card.set()
     else:
         await Register.input_name.set()
-        await bot.send_message(message.chat.id, lang[database.get_language(message)]['start'], reply_markup=Kb.LANGUAGES)
+        database.create_user(message)
+        await bot.send_message(message.chat.id, 'Всегда рада новому гостю. Вам тут рады. Как я могу называть Вас, '
+                                                'гость?🦄', reply_markup=Kb.LANGUAGES)
 
 
 async def check_time(message: types.Message, state: FSMContext):
     data = await state.get_data()
     logging.info(
         f'[{message.from_user.id} | {message.from_user.first_name}] Callback: check_time | {datetime.now()}')
-
-    if data['check'] == 'False':
-        await bot.send_message(message.chat.id, lang[database.get_language(message)]['get_card'],
-                               reply_markup=KbReply.GET_CARD(message))
-    await state.finish()
+    try:
+        if data['check'] == 'False':
+            await bot.send_message(message.chat.id, lang[database.get_language(message)]['get_card'],
+                                   reply_markup=KbReply.GET_CARD(message))
+            await state.finish()
+    except KeyError:
+        pass
 
 
 async def get_name(message: types.Message, state: FSMContext):
     logging.info(
         f'[{message.from_user.id} | {message.from_user.first_name}] Написал {message.text} в {datetime.now()}')
-    database.create_user(message, message.text)
+    database.update_name(message)
     await bot.send_message(message.chat.id, lang[database.get_language(message)]['question_start'](message))
     await Register.input_question.set()
     await state.update_data(check='False')
@@ -112,6 +121,7 @@ async def get_fortune(message: types.Message, state: FSMContext,
     await state.update_data(full_text=False)
     if random.randint(1, 10) in [1, 5]:
         database_decks.update_reverse(lang_user, decks[card]['reversed'], card_name)
+    await Session.session.set()
 
 
 async def thanks(message: types.Message, state: FSMContext):
@@ -128,23 +138,6 @@ async def thanks(message: types.Message, state: FSMContext):
                 await bot.send_message(message.chat.id, lang[database.get_language(message)]['thanks'](message), reply_markup=KbReply.FULL_TEXT_WITHOUT_THX(message))
 
 
-async def full_text(message: types.Message, state: FSMContext):
-    logging.info(
-        f'[{message.from_user.id} | {message.from_user.first_name}] Callback: full_text | {datetime.now()}')
-    data = await state.get_data()
-    keyboard = KbReply.FULL_TEXT(message)
-    if data['thx']:
-        keyboard = KbReply.FULL_TEXT_WITHOUT_THX(message)
-    await bot.delete_message(message.chat.id, data['msg']['message_id'])
-    if len(data['text']) > 4096:
-        await bot.send_message(message.chat.id, data['text'][:4096])
-        await bot.send_message(message.chat.id, data['text'][4096:8192], reply_markup=keyboard)
-        if len(data['text']) > 8192:
-            await bot.send_message(message.chat.id, data['text'][8192:12288], reply_markup=keyboard)
-    else:
-        await bot.send_message(message.chat.id, data['text'], reply_markup=keyboard)
-    await state.update_data(full_text=True)
-
 
 async def get_question(message: types.Message, state: FSMContext):
     logging.info(
@@ -154,6 +147,7 @@ async def get_question(message: types.Message, state: FSMContext):
     await bot.send_message(message.chat.id, lang[database.get_language(message)]['what_say'],
                            reply_markup=KbReply.GET_CARD(message))
     await state.finish()
+    await Session.get_card.set()
 
 
 async def change_language(message: types.Message):
@@ -239,7 +233,7 @@ def register_handlers_client(dp: Dispatcher):
     dp.register_message_handler(get_question, state=Register.input_question)
     dp.register_message_handler(listen_wisdom, state=WisdomState.wisdom)
     dp.register_message_handler(send_message, commands=['send'])
-    dp.register_message_handler(get_fortune, Text(equals=all_lang['get_card'] + all_lang['get_card_again']))
-    dp.register_message_handler(full_text, Text(equals=all_lang['know_more']))
-    dp.register_message_handler(thanks, Text(equals=all_lang['thx']))
+    dp.register_message_handler(get_fortune, Text(equals=all_lang['get_card']), state=Session.get_card)
+    dp.register_message_handler(get_fortune, Text(equals=all_lang['get_card_again']), state=Session.session)
+    dp.register_message_handler(thanks, Text(equals=all_lang['thx']), state=Session.session)
     dp.register_message_handler(text)
