@@ -3,3 +3,5 @@ venv
 .env
 telegram_bot/utils/users.db
 telegram_bot/bot.log
+telegram_bot/utils/decks.py
+telegram_bot/utils/test
