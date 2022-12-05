@@ -9,7 +9,7 @@ from aiogram import types, Dispatcher
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher import FSMContext
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from create_bot import bot
 from keyboards.main_keyboards import Kb, KbReply
@@ -42,6 +42,7 @@ async def welcome(message: types.Message):
     logging.info(
         f'[{message.from_user.id} | {message.from_user.first_name}] Написал {message.text} в {datetime.now()}')
     if database.is_user_exists(message):
+        database_decks.test()
         await bot.send_message(message.chat.id, lang[database.get_language(message)]['send_welcome'](message),
                                reply_markup=KbReply.GET_CARD(message))
         await Session.get_card.set()
@@ -63,6 +64,10 @@ async def check_time(message: types.Message, state: FSMContext):
             await state.finish()
     except KeyError:
         pass
+
+
+# async def check_time_fortune(message: types.Message, state: FSMContext):
+
 
 
 async def get_name(message: types.Message, state: FSMContext):
@@ -122,6 +127,8 @@ async def get_fortune(message: types.Message, state: FSMContext,
     if random.randint(1, 10) in [1, 5]:
         database_decks.update_reverse(lang_user, decks[card]['reversed'], card_name)
     await Session.session.set()
+    await state.update_data(check_time=msg['date'])
+    await asyncio.sleep(20)
 
 
 async def thanks(message: types.Message, state: FSMContext):
@@ -225,10 +232,10 @@ async def text(message: types.Message):
 
 def register_handlers_client(dp: Dispatcher):
     dp.register_message_handler(welcome, commands=['start', 'help'])
-    dp.register_message_handler(about_olivia, commands=['intro'])
-    dp.register_message_handler(history, commands=['memories'])
-    dp.register_message_handler(add_wisdom, commands=['addwisdom'])
-    dp.register_message_handler(change_language, commands=['language'])
+    dp.register_message_handler(about_olivia, commands=['intro'], state='*')
+    dp.register_message_handler(history, commands=['memories'], state='*')
+    dp.register_message_handler(add_wisdom, commands=['addwisdom'], state='*')
+    dp.register_message_handler(change_language, commands=['language'], state='*')
     dp.register_message_handler(get_name, state=Register.input_name)
     dp.register_message_handler(get_question, state=Register.input_question)
     dp.register_message_handler(listen_wisdom, state=WisdomState.wisdom)

@@ -25,17 +25,28 @@ lang = {
         (what should I add or improve? I will take into account all useful comments and links) \
         Let\'s make magic together ✨',
         'answer_wisdom': 'Thank you for your wisdom!\nI will listen to you',
-        'question_again': lambda m: f'What other question haunts you, {database.get_name(m)}?',
+        'question_again': lambda m: choice([f'What else is present in your mind, {database.get_name(m)}?',
+                                            f'We can search for another answer.\nJust ask your question',
+                                            'What else is needed to be clear?\nAsk me...']),
         'choose_language': 'Choose language 🧙‍♂️',
         'thanks': lambda m: f'I was glad to help, {database.get_name(m)}',
-        'what_say': 'Let\'s see what the cards say?',
+        'what_say': choice(['Let\'s hear the wisdom from within...\nHere is your card ✨',
+                            'To reveal the truth we just need the key. Here is yours:',
+                            '*eyes closed*\nCards, would you give us the answer?',
+                            'Well-well-well... What do we have here?']),
         'empty_history': 'Your history is empty',
         'get_card': 'Concentrate your mind on your question and draw a card...',
         'thx': 'Thanks',
-        'know_more': 'Dive deeper',
-        'fortune': 'Draw card',
-        'fortune_again': 'Guess again',
+        'know_more': choice(['Dive deeper', 'Show me more', 'Learn more']),
+        'fortune': choice(['Draw the card', 'Pull the card', 'Reveal the card']),
+        'fortune_again': choice(['May I ask another question?', 'Olivia, can you do one ore reading?',
+                                 'I\'d love to clarify one more thing']),
+        'end_session': lambda m: choice([f'Happy to serve, {database.get_name(m)}. I\'ll be waiting for you next visit',
+                                         f'I\'ll keep everything in my memory for you, {database.get_name(m)}. Welcome '
+                                         f'back anytime you feel like asking another question...', 'Thank you for '
+                                         f'sharing your deepest questions, {database.get_name(m)}. Always here for yuo'])
     },
+
     'ru': {
         'send_welcome': lambda
             call: f'Привет {database.get_name(call)}, меня зовут Оливия 🪄\nЯ умею гадать, '
@@ -56,7 +67,9 @@ lang = {
 (что мне добавить или улучшить? Учту все полезные комментарии и ссылки) \
 Давай творить магию вместе ✨',
         'answer_wisdom': 'Спасибо за вашу мудрость!\nЯ прислушаюсь к вам',
-        'question_again': lambda m: f'Какой ещё вопрос не даёт вам покоя, {database.get_name(m)}?',
+        'question_again': lambda m: choice([f'Что ещё вас волнует, {database.get_name(m)}?',
+                                            f'Итак, каким будет Ваш следующий вопрос?',
+                                            'Чем ещё заняты Ваши мысли?\nЗадайте вопрос']),
         'question_start': lambda m: f'Какой вопрос не даёт вам покоя, {m.text}?',
         'choose_language': 'Выберите язык 🧙‍♂️',
         'thanks': lambda m: f'Рада была помочь, {database.get_name(m)}',
@@ -65,16 +78,21 @@ lang = {
         'empty_history': 'Ваша история пуста',
         'get_card': 'Сконцентрируйте сознание на своем вопросе и вытяните карту...',
         'thx': 'Спасибо',
-        'know_more': 'Узнать больше',
-        'fortune': 'Вытянуть карту',
-        'fortune_again': 'Погадать ещё раз',
+        'know_more': choice(['Узнать больше', 'Хочу узнать больше', 'Расскажи ещё']),
+        'fortune': choice(['Вытянуть карту', 'Посмотреть карту']),
+        'fortune_again': choice(['Погадать ещё раз', 'Оливия, у меня ещё вопрос', 'Мне нужно ещё кое-что узнать',
+                                 'Пожалуйста, ещё вопрос']),
+        'end_session': lambda m: choice([f'Рада была помочь Вам, {database.get_name(m)}. Возвращайтесь, '
+                                         f'когда возникнуть вопросы', f'Я сохраню все в своей памяти,'
+                                         f' {database.get_name(m)}. Буду рада видеть вас снова',
+                                         'Спасибо за то, что доверили мне Ваши вопросы. Я буду тут, если снова '
+                                         'понадоблюсь'])
 
     }
 }
 
 all_lang = {
     'thx': ['Thanks', 'Спасибо'],
-    'know_more': ['Dive deeper', 'Узнать больше'],
-    'get_card': ['Draw card', 'Вытянуть карту'],
-    'get_card_again': ['Guess again', 'Погадать ещё раз'],
+    'get_card': [lang['en']['fortune'], lang['ru']['fortune']],
+    'get_card_again': [lang['en']['fortune_again'], lang['ru']['fortune_again']],
 }

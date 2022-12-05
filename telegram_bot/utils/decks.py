@@ -391,7 +391,8 @@ decks = {
         },
 }
 # import os
-# for i in os.listdir('../static/text/ru/reverse'):
+# for i in os.listdir('../static/img/ru/relationship'):
 #     if '\xa0' in i:
+#         print(i)
 #         sym = '\xa0'
-#         os.rename(f'../static/text/ru/reverse/{i}', f'../static/text/ru/reverse/{i.replace(sym, " ")}')
+#         os.rename(f'../static/img/ru/relationship/{i}', f'../static/img/ru/relationship/{i.replace(sym, " ")}')
