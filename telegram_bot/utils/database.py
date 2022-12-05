@@ -177,11 +177,3 @@ class Decks(Database):
 
     def get_reversed(self, lang: str, text: str):
         return self.cur.execute(f'SELECT reversed FROM decks WHERE {lang} = "{text}"').fetchone()[0]
-
-    def test(self):
-        print(os.listdir('static/img/en/day_card'))
-        for i in os.listdir('static/img/en/day_card'):
-            try:
-                self.get_reversed('en', i[:-4])
-            except Exception:
-                print(i[:-4], '- Ошибка')

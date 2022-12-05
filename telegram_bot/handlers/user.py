@@ -42,7 +42,6 @@ async def welcome(message: types.Message):
     logging.info(
         f'[{message.from_user.id} | {message.from_user.first_name}] Написал {message.text} в {datetime.now()}')
     if database.is_user_exists(message):
-        database_decks.test()
         await bot.send_message(message.chat.id, lang[database.get_language(message)]['send_welcome'](message),
                                reply_markup=KbReply.GET_CARD(message))
         await Session.get_card.set()
