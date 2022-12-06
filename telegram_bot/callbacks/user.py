@@ -8,7 +8,6 @@ from aiogram.dispatcher import FSMContext
 from keyboards.main_keyboards import Kb
 from utils.database import User, Fortune, Decks
 from utils.languages import lang
-from create_bot import bot
 from handlers.user import Session
 
 logging.basicConfig(filename='bot.log', encoding='utf-8', level=logging.INFO)
@@ -21,15 +20,6 @@ DIR_TXT = lambda lang: f'static/text/{lang}/day_card'
 
 class FortuneState(StatesGroup):
     question = State()
-
-
-async def welcome(call: types.CallbackQuery):
-    if call.data == 'day_card':
-        logging.info(
-            f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Стандартные карты | {datetime.now()}')
-        await call.message.edit_text(lang[database.get_language(call)]['fortune?'](call),
-                                     reply_markup=Kb.fortune_menu(call))
-    await call.answer()
 
 
 async def switch_language(call: types.CallbackQuery):
@@ -81,9 +71,9 @@ async def full_text_history(call: types.CallbackQuery, state: FSMContext):
             data = open(f'{DIR_TXT(database.get_language(call))}/{data[f"history_{call.data}"]}.txt', 'r').read()
             if len(data) > 4096:
                 for x in range(0, len(data), 4096):
-                    await call.message.edit_text(data[x:x + 4096], reply_markup=Kb.history_back(call.data))
+                    await call.message.edit_text(data[x:x + 4096], reply_markup=Kb.HISTORY_BACK(call.data))
             else:
-                await call.message.edit_text(data, reply_markup=Kb.history_back(call.data))
+                await call.message.edit_text(data, reply_markup=Kb.HISTORY_BACK(call.data))
 
 
 async def back_text_history(call: types.CallbackQuery, state: FSMContext):
@@ -93,25 +83,12 @@ async def back_text_history(call: types.CallbackQuery, state: FSMContext):
                                          open(
                                              f'{DIR_TXT(database.get_language(call))}/{data[f"history_{call.data[:-5]}"]}.txt',
                                              'r').read()[:150],
-                                         reply_markup=Kb.history_full(call.data[:-5]))
-
-
-async def question(message: types.Message, state: FSMContext):
-    logging.info(f'[{message.from_user.id} | {message.from_user.first_name}] Написал {message.text} в {datetime.now()}')
-    await message.bot.send_message(message.chat.id, lang[database.get_language(message)]['question2'])
-    data = await state.get_data()
-    database_fortune.create_fortune(message, data['card'], message.text, data['type_fortune'])
-    database_fortune.check_session(message)
-    await bot.send_message(message.chat.id, lang[database.get_language(message)]['send_welcome'](message),
-                           reply_markup=Kb.start_button(message))
-    await FortuneState.next()
+                                         reply_markup=Kb.HISTORY_FULL(call.data[:-5]))
 
 
 def register_handlers_callback(dp: Dispatcher):
-    dp.register_callback_query_handler(welcome, text=['day_card', 'authors ru', 'switch language', 'history'])
     dp.register_callback_query_handler(switch_language, text=['switch english', 'switch russian', 'switch english_command',
                                                               'switch russian_command'], state='*')
     dp.register_callback_query_handler(full_text, text=['full_text'], state=Session.session)
     dp.register_callback_query_handler(full_text_history, text=database.get_data_history())
     dp.register_callback_query_handler(back_text_history, text=database.get_data_history_back())
-    dp.register_message_handler(question, state=FortuneState.question)

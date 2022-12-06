@@ -9,7 +9,7 @@ from aiogram import types, Dispatcher
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher import FSMContext
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from create_bot import bot
 from keyboards.main_keyboards import Kb, KbReply
@@ -85,7 +85,7 @@ async def get_fortune(message: types.Message, state: FSMContext,
                       DIR_TXT=lambda lang: f'static/text/{lang}/day_card',
                       DIR_REVERSE=lambda lang: f'static/text/{lang}/reverse'):
     if database.get_olivia_energy() > 0:
-        if message.text == 'Погадать ещё раз':
+        if message.text in all_lang['get_card_again']:
             await bot.send_message(message.chat.id, lang[database.get_language(message)]['question_again'](message), reply_markup=types.ReplyKeyboardRemove()
 )
             await Register.input_question.set()
@@ -115,7 +115,7 @@ async def get_fortune(message: types.Message, state: FSMContext,
     await bot.send_photo(message.chat.id, buffer.getbuffer(), reply_markup=KbReply.FULL_TEXT(message))
     im.close()
     await state.update_data(text=open(path_txt, 'r').read())
-    msg = await bot.send_message(message.chat.id, open(path_txt, 'r').read()[:380] + '...', reply_markup=Kb.text_full(message))
+    msg = await bot.send_message(message.chat.id, open(path_txt, 'r').read()[:380] + '...', reply_markup=Kb.TEXT_FULL(message))
     await state.update_data(msg=msg)
     database_fortune.add_history(message, card_name, open(path_txt, 'r').read()[0:150])
     database.minus_energy()
@@ -193,7 +193,7 @@ async def history(message: types.Message, state: FSMContext):
                     return
                 data[f'history_{i[3]}'] = i[1]
                 await bot.send_message(message.chat.id, '%s | %s\n%s' % (i[3], i[1], i[2].replace('\t', '')),
-                                          reply_markup=Kb.history_full(i[3]))
+                                          reply_markup=Kb.HISTORY_FULL(i[3]))
                 count += 1
         else:
             await bot.send_message(message.chat.id, lang[database.get_language(message)]['empty_history'])

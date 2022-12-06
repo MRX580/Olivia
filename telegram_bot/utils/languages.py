@@ -39,6 +39,7 @@ lang = {
         'thx': 'Thanks',
         'know_more': choice(['Dive deeper', 'Show me more', 'Learn more']),
         'fortune': choice(['Draw the card', 'Pull the card', 'Reveal the card']),
+        'past_present_future': choice(['"Past present future"']),
         'fortune_again': choice(['May I ask another question?', 'Olivia, can you do one ore reading?',
                                  'I\'d love to clarify one more thing']),
         'end_session': lambda m: choice([f'Happy to serve, {database.get_name(m)}. I\'ll be waiting for you next visit',
@@ -80,6 +81,7 @@ lang = {
         'thx': 'Спасибо',
         'know_more': choice(['Узнать больше', 'Хочу узнать больше', 'Расскажи ещё']),
         'fortune': choice(['Вытянуть карту', 'Посмотреть карту']),
+        'past_present_future': choice(['"Прошлое, настоящее, будущее"']),
         'fortune_again': choice(['Погадать ещё раз', 'Оливия, у меня ещё вопрос', 'Мне нужно ещё кое-что узнать',
                                  'Пожалуйста, ещё вопрос']),
         'end_session': lambda m: choice([f'Рада была помочь Вам, {database.get_name(m)}. Возвращайтесь, '
