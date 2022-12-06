@@ -33,7 +33,7 @@ class Kb:
 
 class KbReply:
 
-    GET_CARD = lambda m: ReplyKeyboardMarkup(resize_keyboard=True).add(
+    GET_CARD = lambda m: ReplyKeyboardMarkup(resize_keyboard=True, row_width=1).add(
         lang[database.get_language(m)]['fortune'],
         lang[database.get_language(m)]['past_present_future']
     )

@@ -60,7 +60,7 @@ async def check_time(message: types.Message, state: FSMContext):
         if data['check'] == 'False':
             await bot.send_message(message.chat.id, lang[database.get_language(message)]['get_card'],
                                    reply_markup=KbReply.GET_CARD(message))
-            await state.finish()
+            await Session.get_card.set()
     except KeyError:
         pass
 
@@ -105,6 +105,9 @@ async def get_fortune(message: types.Message, state: FSMContext,
     card_name = decks[card][lang_user]
     path_img = os.path.join(DIR_IMG, f'{card}.jpg')
     path_txt = os.path.join(DIR_TXT(lang_user), f'{card_name}.txt')
+    logging.info(
+        f'[{message.from_user.id} | {message.from_user.first_name}] card: {card_name}.'
+        f' path_txt - {path_txt}\npath_img - {path_img} | {datetime.now()}')
     im = Image.open(open(path_img, 'rb'))
     buffer = io.BytesIO()
     if database_decks.get_reversed(lang_user, card_name):
