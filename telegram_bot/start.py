@@ -1,6 +1,6 @@
 import asyncio
 
-from handlers.user import register_handlers_client
+from handlers import user, fortunes
 from callbacks.user import register_handlers_callback
 from aiogram import executor
 from create_bot import dp
@@ -13,6 +13,7 @@ async def plus_energy(dp):
 
 
 if __name__ == "__main__":
-    register_handlers_client(dp)
+    fortunes.register_handlers_client(dp)
+    user.register_handlers_client(dp)
     register_handlers_callback(dp)
     executor.start_polling(dp, skip_updates=True, on_startup=plus_energy)

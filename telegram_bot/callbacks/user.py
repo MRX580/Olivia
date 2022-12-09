@@ -55,13 +55,14 @@ async def full_text(call: types.CallbackQuery, state: FSMContext):
         logging.info(
             f'[{call.from_user.id} | {call.from_user.first_name}] Callback: full_text | {datetime.now()}')
         data = await state.get_data()
-        if len(data['text']) > 4096:
-            await call.message.edit_text(data['text'][:4096])
-            await call.message.answer(data['text'][4096:8192])
-            if len(data['text']) > 8192:
-                await call.message.answer(data['text'][8192:12288])
+        text = data[call.message.message_id]
+        if len(text) > 4096:
+            await call.message.edit_text(text[:4096])
+            await call.message.answer(text[4096:8192])
+            if len(text) > 8192:
+                await call.message.answer(text[8192:12288])
         else:
-            await call.message.edit_text(data['text'])
+            await call.message.edit_text(text)
         await state.update_data(full_text=True)
 
 

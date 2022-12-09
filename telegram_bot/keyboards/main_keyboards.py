@@ -47,3 +47,19 @@ class KbReply:
         lang[database.get_language(m)]['fortune_again']
     )
 
+    MENU_3_CARDS = ReplyKeyboardMarkup(resize_keyboard=True, row_width=1).add(
+        'Вытянуть три карты',
+        'Другой расклад'
+    )
+
+    AFTER_END_SESSION = lambda m: ReplyKeyboardMarkup(resize_keyboard=True).add(
+        lang[database.get_language(m)]['after_session']
+    )
+
+    PPF_MENU = lambda m, data: ReplyKeyboardMarkup(resize_keyboard=True, row_width=1).add(
+        lang[database.get_language(m)]['open_past'] if not data['past'] else '',
+        lang[database.get_language(m)]['open_present']if not data['present'] else '',
+        lang[database.get_language(m)]['open_future']if not data['future'] else ''
+    )
+
+

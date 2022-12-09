@@ -38,14 +38,23 @@ lang = {
         'get_card': 'Concentrate your mind on your question and draw a card...',
         'thx': 'Thanks',
         'know_more': choice(['Dive deeper', 'Show me more', 'Learn more']),
-        'fortune': choice(['Draw the card', 'Pull the card', 'Reveal the card']),
+        'fortune': choice(['Draw one card', 'Pull one card', 'Reveal one card']),
         'past_present_future': choice(['"Past present future"']),
         'fortune_again': choice(['May I ask another question?', 'Olivia, can you do one ore reading?',
                                  'I\'d love to clarify one more thing']),
         'end_session': lambda m: choice([f'Happy to serve, {database.get_name(m)}. I\'ll be waiting for you next visit',
                                          f'I\'ll keep everything in my memory for you, {database.get_name(m)}. Welcome '
                                          f'back anytime you feel like asking another question...', 'Thank you for '
-                                         f'sharing your deepest questions, {database.get_name(m)}. Always here for yuo'])
+                                         f'sharing your deepest questions, {database.get_name(m)}. Always here for yuo']),
+        'after_session': choice(['knock-knock', 'Olivia, I need you again', 'ding dong']),
+        'start_session': lambda m: choice([f'What\'s the question that is bothering you today, {database.get_name(m)}?',
+                                 'Happy to see you again, my friend. What question led you here?',
+                                 f'Welcome back, {database.get_name(m)}. I knew you\'ll come. Ask your question',
+                                f'I\'ve been waiting for you, {database.get_name(m)}. Feel free to ask your question']),
+        'get_3_cards': 'Draw three cards',
+        'open_past': 'Open map of the past',
+        'open_present': 'Open map of the present',
+        'open_future': 'Open map of the future',
     },
 
     'ru': {
@@ -80,7 +89,7 @@ lang = {
         'get_card': 'Сконцентрируйте сознание на своем вопросе и вытяните карту...',
         'thx': 'Спасибо',
         'know_more': choice(['Узнать больше', 'Хочу узнать больше', 'Расскажи ещё']),
-        'fortune': choice(['Вытянуть карту', 'Посмотреть карту']),
+        'fortune': choice(['Вытянуть одну карту', 'Посмотреть одну карту']),
         'past_present_future': choice(['"Прошлое, настоящее, будущее"']),
         'fortune_again': choice(['Погадать ещё раз', 'Оливия, у меня ещё вопрос', 'Мне нужно ещё кое-что узнать',
                                  'Пожалуйста, ещё вопрос']),
@@ -88,8 +97,16 @@ lang = {
                                          f'когда возникнуть вопросы', f'Я сохраню все в своей памяти,'
                                          f' {database.get_name(m)}. Буду рада видеть вас снова',
                                          'Спасибо за то, что доверили мне Ваши вопросы. Я буду тут, если снова '
-                                         'понадоблюсь'])
-
+                                         'понадоблюсь']),
+        'after_session': choice(['Тук-тук', 'Мне нужно ещё кое-что узнать', 'Динь-дон...']),
+        'start_session': lambda m: choice([f'Что сегодня не даёт Вам покоя, {database.get_name(m)}?',
+                                 'Рада вас видеть снова! Какой вопрос привёл Вас ко мне?',
+                                 'Новый день - новый вопрос. О чём мы спросим у карт сегодня?',
+                                f'Добро пожаловать. Я ждала вас, {database.get_name(m)}. Задавайте вопрос']),
+        'get_3_cards': 'Вытянуть три карты',
+        'open_past': 'Открыть карту прошлого',
+        'open_present': 'Открыть карту настоящего',
+        'open_future': 'Открыть карту будущего',
     }
 }
 
@@ -97,4 +114,9 @@ all_lang = {
     'thx': ['Thanks', 'Спасибо'],
     'get_card': [lang['en']['fortune'], lang['ru']['fortune']],
     'get_card_again': [lang['en']['fortune_again'], lang['ru']['fortune_again']],
+    'past_present_future': [lang['en']['past_present_future'], lang['ru']['past_present_future']],
+    'after_session': [lang['en']['after_session'], lang['ru']['after_session']],
+    'get_3_cards': [lang['en']['get_3_cards'], lang['ru']['get_3_cards']],
+    'open_3_cards': [lang['en']['open_past'], lang['ru']['open_past'], lang['en']['open_present'],
+                     lang['ru']['open_present'], lang['en']['open_future'], lang['ru']['open_future']],
 }
