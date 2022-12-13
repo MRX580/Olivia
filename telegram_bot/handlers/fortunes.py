@@ -93,7 +93,7 @@ async def get_fortune(message: types.Message, state: FSMContext):
         database.minus_energy()
         await Session.session.set()
         await state.update_data(close_session=datetime.now())
-        await asyncio.sleep(30)
+        await asyncio.sleep(3600)
         await close_session(message, state)
     elif message.text in all_lang['get_3_cards']:
         logging.info(
@@ -120,7 +120,7 @@ async def session_3_cards(message: types.Message, state: FSMContext):
         database.minus_energy()
         await Session.session.set()
         await state.update_data(close_session=datetime.now())
-        await asyncio.sleep(30)
+        await asyncio.sleep(3600)
         await close_session(message, state)
         return
     await get_card(message, state, KbReply.PPF_MENU(message, await state.get_data()), choose)

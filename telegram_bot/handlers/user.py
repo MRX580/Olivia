@@ -49,14 +49,14 @@ async def close_session(message: types.Message, state: FSMContext):
     data = await state.get_data()
     try:
         if data['thx']:
-            if data['close_session']+timedelta(seconds=10) < datetime.now():
+            if data['close_session']+timedelta(hours=1) < datetime.now():
                 logging.info(
                     f'[{message.from_user.id} | {message.from_user.first_name}] Callback: close_session(thx) | {datetime.now()}')
                 await bot.send_message(message.chat.id, lang[database.get_language(message)]['end_session'](message),
                                        reply_markup=KbReply.AFTER_END_SESSION(message))
                 await state.reset_state()
         else:
-            if data['close_session']+timedelta(seconds=30) < datetime.now():
+            if data['close_session']+timedelta(minutes=5) < datetime.now():
                 logging.info(
                     f'[{message.from_user.id} | {message.from_user.first_name}] Callback: close_session | {datetime.now()}')
                 await bot.send_message(message.chat.id, lang[database.get_language(message)]['end_session'](message), disable_notification=True,
@@ -103,7 +103,7 @@ async def thanks(message: types.Message, state: FSMContext):
                                        reply_markup=KbReply.FULL_TEXT_WITHOUT_THX(message))
             else:
                 await bot.send_message(message.chat.id, lang[database.get_language(message)]['thanks'](message), reply_markup=KbReply.FULL_TEXT_WITHOUT_THX(message))
-            await asyncio.sleep(10)
+            await asyncio.sleep(300)
             await close_session(message, state)
 
 
