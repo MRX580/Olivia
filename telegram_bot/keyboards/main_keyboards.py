@@ -47,9 +47,9 @@ class KbReply:
         lang[database.get_language(m)]['fortune_again']
     )
 
-    MENU_3_CARDS = ReplyKeyboardMarkup(resize_keyboard=True, row_width=1).add(
-        'Вытянуть три карты',
-        'Другой расклад'
+    MENU_3_CARDS = lambda m: ReplyKeyboardMarkup(resize_keyboard=True, row_width=1).add(
+        lang[database.get_language(m)]['get_3_cards'],
+        lang[database.get_language(m)]['another_alignment']
     )
 
     AFTER_END_SESSION = lambda m: ReplyKeyboardMarkup(resize_keyboard=True).add(

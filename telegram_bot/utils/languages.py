@@ -52,10 +52,20 @@ lang = {
                                  f'Welcome back, {database.get_name(m)}. I knew you\'ll come. Ask your question',
                                 f'I\'ve been waiting for you, {database.get_name(m)}. Feel free to ask your question']),
         'get_3_cards': 'Draw three cards',
+        'another_alignment': 'Another alignment',
+        'start_3_cards': 'This alignment will give a general understanding of the current situation on your issue.\n'
+                                            'Draw three cards to start.',
         'open_past': 'Open map of the past',
+        'past': '*Map of the past*\nWhat past attitudes, feelings, or beliefs influenced the question?',
         'open_present': 'Open map of the present',
+        'present': '*Map of the present*\nWhat forces are influencing the question right now?',
         'open_future': 'Open map of the future',
+        'future': '*Map of the future*\nHow will this situation develop further?',
+        'open_cards': 'It remains only to open the cards..',
     },
+
+
+
 
     'ru': {
         'send_welcome': lambda
@@ -104,9 +114,16 @@ lang = {
                                  'Новый день - новый вопрос. О чём мы спросим у карт сегодня?',
                                 f'Добро пожаловать. Я ждала вас, {database.get_name(m)}. Задавайте вопрос']),
         'get_3_cards': 'Вытянуть три карты',
+        'another_alignment': 'Другой расклад',
+        'start_3_cards': 'Этот расклад даст общее понимание о сложившейся ситуации по вашему вопросу.\n'
+                                            'Вытяните три карты, чтобы начать.',
         'open_past': 'Открыть карту прошлого',
+        'past': '*Карта прошлого*\nКакие установки, чувства или убеждения прошлого повлияли на вопрос?',
         'open_present': 'Открыть карту настоящего',
+        'present': '*Карта настоящего*\nКакие силы влияют на вопрос прямо сейчас?',
         'open_future': 'Открыть карту будущего',
+        'future': '*Карта будущего*\nКак будет дальше развиваться эта ситуация?',
+        'open_cards': 'Осталось только открыть карты..',
     }
 }
 

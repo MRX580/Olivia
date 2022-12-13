@@ -50,11 +50,15 @@ async def close_session(message: types.Message, state: FSMContext):
     try:
         if data['thx']:
             if data['close_session']+timedelta(seconds=10) < datetime.now():
+                logging.info(
+                    f'[{message.from_user.id} | {message.from_user.first_name}] Callback: close_session(thx) | {datetime.now()}')
                 await bot.send_message(message.chat.id, lang[database.get_language(message)]['end_session'](message),
                                        reply_markup=KbReply.AFTER_END_SESSION(message))
                 await state.reset_state()
         else:
             if data['close_session']+timedelta(seconds=30) < datetime.now():
+                logging.info(
+                    f'[{message.from_user.id} | {message.from_user.first_name}] Callback: close_session | {datetime.now()}')
                 await bot.send_message(message.chat.id, lang[database.get_language(message)]['end_session'](message), disable_notification=True,
                                        reply_markup=KbReply.AFTER_END_SESSION(message))
                 await state.reset_state()
@@ -82,7 +86,7 @@ async def get_name(message: types.Message, state: FSMContext):
     await bot.send_message(message.chat.id, lang[database.get_language(message)]['question_start'](message))
     await Register.input_question.set()
     await state.update_data(check='False')
-    await asyncio.sleep(30)
+    await asyncio.sleep(45)
     await check_time(message, state)
 
 
@@ -101,15 +105,19 @@ async def thanks(message: types.Message, state: FSMContext):
                 await bot.send_message(message.chat.id, lang[database.get_language(message)]['thanks'](message), reply_markup=KbReply.FULL_TEXT_WITHOUT_THX(message))
             await asyncio.sleep(10)
             await close_session(message, state)
+
+
 async def another_alignment(message: types.Message):
+    logging.info(
+        f'[{message.from_user.id} | {message.from_user.first_name}] Callback: another_alignment | {datetime.now()}')
     await bot.send_message(message.chat.id, lang[database.get_language(message)]['send_welcome'](message),
                            reply_markup=KbReply.GET_CARD(message))
     await Session.get_card.set()
 
 
 async def past_present_future(message: types.Message):
-    await bot.send_message(message.chat.id, 'Этот расклад даст общее понимание о сложившейся ситуации по вашему вопросу.\n'
-                                            'Вытяните три карты, чтобы начать.', reply_markup=KbReply.MENU_3_CARDS)
+    await bot.send_message(message.chat.id, lang[database.get_language(message)]['start_3_cards']
+                           , reply_markup=KbReply.MENU_3_CARDS(message))
 
 
 async def get_question(message: types.Message, state: FSMContext):
@@ -186,9 +194,8 @@ async def after_session(message: types.Message, state: FSMContext):
                            )
     await Register.input_question.set()
     await state.update_data(check='False')
-    await asyncio.sleep(30)
+    await asyncio.sleep(45)
     await check_time(message, state)
-    return
 
 
 def register_handlers_client(dp: Dispatcher):

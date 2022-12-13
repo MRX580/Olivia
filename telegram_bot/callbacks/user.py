@@ -1,6 +1,8 @@
 import logging
 
 from datetime import datetime
+
+import aiogram.utils.exceptions
 from aiogram import types, Dispatcher
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.dispatcher import FSMContext
@@ -23,30 +25,33 @@ class FortuneState(StatesGroup):
 
 
 async def switch_language(call: types.CallbackQuery):
-    if call.data == 'switch english':
-        logging.info(
-            f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Смена языка на английский | {datetime.now()}')
-        database.switch_language('en', call)
-        await call.message.edit_text(lang[database.get_language(call)]['start'],
-                                     reply_markup=Kb.LANGUAGES)
-    if call.data == 'switch russian':
-        logging.info(
-            f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Смена языка на русский | {datetime.now()}')
-        database.switch_language('ru', call)
-        await call.message.edit_text(lang[database.get_language(call)]['start'],
-                                     reply_markup=Kb.LANGUAGES)
-    if call.data == 'switch english_command':
-        logging.info(
-            f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Смена языка на английский command | {datetime.now()}')
-        database.switch_language('en', call)
-        await call.message.edit_text(lang[database.get_language(call)]['choose_language'],
-                                     reply_markup=Kb.LANGUAGES_COMMAND)
-    if call.data == 'switch russian_command':
-        logging.info(
-            f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Смена языка на русский command | {datetime.now()}')
-        database.switch_language('ru', call)
-        await call.message.edit_text(lang[database.get_language(call)]['choose_language'],
-                                     reply_markup=Kb.LANGUAGES_COMMAND)
+    try:
+        if call.data == 'switch english':
+            logging.info(
+                f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Смена языка на английский | {datetime.now()}')
+            database.switch_language('en', call)
+            await call.message.edit_text(lang[database.get_language(call)]['start'],
+                                         reply_markup=Kb.LANGUAGES)
+        elif call.data == 'switch russian':
+            logging.info(
+                f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Смена языка на русский | {datetime.now()}')
+            database.switch_language('ru', call)
+            await call.message.edit_text(lang[database.get_language(call)]['start'],
+                                         reply_markup=Kb.LANGUAGES)
+        elif call.data == 'switch english_command':
+            logging.info(
+                f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Смена языка на английский command | {datetime.now()}')
+            database.switch_language('en', call)
+            await call.message.edit_text(lang[database.get_language(call)]['choose_language'],
+                                         reply_markup=Kb.LANGUAGES_COMMAND)
+        elif call.data == 'switch russian_command':
+            logging.info(
+                f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Смена языка на русский command | {datetime.now()}')
+            database.switch_language('ru', call)
+            await call.message.edit_text(lang[database.get_language(call)]['choose_language'],
+                                         reply_markup=Kb.LANGUAGES_COMMAND)
+    except aiogram.utils.exceptions.MessageNotModified:
+        pass
     await call.answer()
 
 

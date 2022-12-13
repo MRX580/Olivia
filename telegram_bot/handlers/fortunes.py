@@ -52,14 +52,15 @@ async def get_card(message: types.Message, state: FSMContext, extra_keyboard=Fal
     await bot.send_photo(message.chat.id, buffer.getbuffer(), reply_markup=extra_keyboard)
     im.close()
     if mode == 'past':
-        await bot.send_message(message.chat.id, '*Карта прошлого*\nКакие установки, чувства или убеждения прошлого повлияли на вопрос?', parse_mode='markdown')
+        await bot.send_message(message.chat.id, lang[database.get_language(message)]['past'],
+                               parse_mode='markdown')
     elif mode == 'present':
         await bot.send_message(message.chat.id,
-                               '*Карта настоящего*\nКакие силы влияют на вопрос прямо сейчас?',
+                               lang[database.get_language(message)]['present'],
                                parse_mode='markdown')
     elif mode == 'future':
         await bot.send_message(message.chat.id,
-                               '*Карта будущего*\nКак будет дальше развиваться эта ситуация?',
+                               lang[database.get_language(message)]['future'],
                                parse_mode='markdown')
     msg = await bot.send_message(message.chat.id, open(path_txt, 'r').read()[:380] + '...',
                                  reply_markup=Kb.TEXT_FULL(message))
@@ -79,13 +80,15 @@ async def get_fortune(message: types.Message, state: FSMContext):
 )
             await Register.input_question.set()
             await state.update_data(check='False')
-            await asyncio.sleep(30)
+            await asyncio.sleep(45)
             await check_time(message, state)
             return
     else:
         await bot.send_message(message.chat.id, lang[database.get_language(message)]['no_energy'])
         return
     if message.text in all_lang['get_card_again'] + all_lang['get_card']:
+        logging.info(
+            f'[{message.from_user.id} | {message.from_user.first_name}] Callback: one_card | {datetime.now()}')
         await get_card(message, state)
         database.minus_energy()
         await Session.session.set()
@@ -93,9 +96,11 @@ async def get_fortune(message: types.Message, state: FSMContext):
         await asyncio.sleep(30)
         await close_session(message, state)
     elif message.text in all_lang['get_3_cards']:
+        logging.info(
+            f'[{message.from_user.id} | {message.from_user.first_name}] Callback: get_3_cards | {datetime.now()}')
         await bot.send_photo(message.chat.id, open('static/img/static/past_present_future.jpg', 'rb'))
         await state.update_data(past=False, present=False, future=False)
-        await bot.send_message(message.chat.id, 'Осталось только открыть карты..',
+        await bot.send_message(message.chat.id, lang[database.get_language(message)]['open_cards'],
                                reply_markup=KbReply.PPF_MENU(message, await state.get_data()))
         await Session.session_3_cards.set()
 
