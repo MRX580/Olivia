@@ -105,6 +105,7 @@ async def get_fortune(message: types.Message, state: FSMContext):
         await Session.session_3_cards.set()
 
 
+
 async def session_3_cards(message: types.Message, state: FSMContext):
     user_lang = lang[database.get_language(message)]
     async with state.proxy() as data:

@@ -28,6 +28,7 @@ lang = {
         'question_again': lambda m: choice([f'What else is present in your mind, {database.get_name(m)}?',
                                             f'We can search for another answer.\nJust ask your question',
                                             'What else is needed to be clear?\nAsk me...']),
+        'question_start': lambda m: f'What question is bothering you, {m.text}?',
         'choose_language': 'Choose language 🧙‍♂️',
         'thanks': lambda m: f'I was glad to help, {database.get_name(m)}',
         'what_say': choice(['Let\'s hear the wisdom from within...\nHere is your card ✨',
