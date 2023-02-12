@@ -35,11 +35,11 @@ class WisdomState(StatesGroup):
     wisdom = State()
 
 
-def callback_fun(e, code, message):
-    """A callback function"""
-    print(e)
-    print(code, message)
-amplitude.configuration.callback = callback_fun
+# def callback_fun(e, code, message):
+#     """A callback function"""
+#     print(e)
+#     print(code, message)
+# amplitude.configuration.callback = callback_fun
 async def welcome(message: types.Message):
     logging.info(
         f'[{message.from_user.id} | {message.from_user.first_name}] Написал {message.text} в {datetime.now()}')
