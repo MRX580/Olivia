@@ -6,7 +6,7 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher import FSMContext
 from datetime import datetime, timedelta
-from amplitude import Amplitude, BaseEvent
+# from amplitude import Amplitude, BaseEvent
 
 from create_bot import bot
 from keyboards.main_keyboards import Kb, KbReply
@@ -19,8 +19,7 @@ database = User()
 database_fortune = Fortune()
 database_wisdom = Wisdom()
 
-# amplitude = Amplitude("fc9fb5f4119cf988559b41168b901712")
-amplitude = Amplitude("bbdc22a8304dbf12f2aaff6cd40fbdd3")
+# amplitude = Amplitude("bbdc22a8304dbf12f2aaff6cd40fbdd3")
 #
 class Register(StatesGroup):
     input_name = State()
