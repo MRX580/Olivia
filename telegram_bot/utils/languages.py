@@ -8,8 +8,7 @@ database_fortune = Fortune()
 lang = {
     'en': {
         'send_welcome': lambda
-            call: f'Hello {database.get_name(call)}, my name is Olivia 🪄\nI know how to guess, '
-                  f'let\'s try? 👇 ',
+            call: f'Hello {database.get_name(call)}, my name is Olivia 🪄\nLet\'s open up your unconscious..',
         'start': f'Always glad to have a new guest. You are welcome here. How can I call you, guest?🦄',
         'clarify': 'Clarify a situation 🌟',
         'day_card': 'Сard of the day 🃏',
@@ -28,7 +27,7 @@ lang = {
         'question_again': lambda m: choice([f'What else is present in your mind, {database.get_name(m)}?',
                                             f'We can search for another answer.\nJust ask your question',
                                             'What else is needed to be clear?\nAsk me...']),
-        'question_start': lambda m: f'What question is bothering you, {m.text}?',
+        'question_start': lambda m: f'What question is bothering you, {database.get_name(m)}?',
         'choose_language': 'Choose language 🧙‍♂️',
         'thanks': lambda m: f'I was glad to help, {database.get_name(m)}',
         'what_say': choice(['Let\'s hear the wisdom from within...\nHere is your card ✨',
@@ -54,6 +53,7 @@ lang = {
                                 f'I\'ve been waiting for you, {database.get_name(m)}. Feel free to ask your question']),
         'get_3_cards': 'Draw three cards',
         'another_alignment': 'Another alignment',
+        'another_alignment_text': 'Hmm.. Let\'s take another look.',
         'start_3_cards': 'This alignment will give a general understanding of the current situation on your issue.\n'
                                             'Draw three cards to start.',
         'open_past': 'Open map of the past',
@@ -63,6 +63,9 @@ lang = {
         'open_future': 'Open map of the future',
         'future': '*Map of the future*\nHow will this situation develop further?',
         'open_cards': 'It remains only to open the cards..',
+        'divination': 'Divination',
+        'divination_text': 'Well, I\'ve got cards for every situation',
+        'human_design': 'Human design',
     },
 
 
@@ -70,8 +73,7 @@ lang = {
 
     'ru': {
         'send_welcome': lambda
-            call: f'Привет {database.get_name(call)}, меня зовут Оливия 🪄\nЯ умею гадать, '
-                  f'давай попробуем? 👇 ',
+            call: f'Привет {database.get_name(call)}, меня зовут Оливия 🪄\nДавай раскроем твое бессознательное..',
         'start': f'Всегда рада новому гостю. Вам тут рады. Как я могу называть Вас, гость?🦄',
         'clarify': 'Прояснить ситуацию 🌟',
         'author_cards': 'Авторские карты 🎴',
@@ -91,7 +93,7 @@ lang = {
         'question_again': lambda m: choice([f'Что ещё вас волнует, {database.get_name(m)}?',
                                             f'Итак, каким будет Ваш следующий вопрос?',
                                             'Чем ещё заняты Ваши мысли?\nЗадайте вопрос']),
-        'question_start': lambda m: f'Какой вопрос не даёт вам покоя, {m.text}?',
+        'question_start': lambda m: f'Какой вопрос не даёт вам покоя, {database.get_name(m)}?',
         'choose_language': 'Выберите язык 🧙‍♂️',
         'thanks': lambda m: f'Рада была помочь, {database.get_name(m)}',
         'what_say': choice(['Давайте посмотрим, что скажут карты?', 'Иногда, чтобы открыть истину, нужен верный ключ. Вот '
@@ -116,6 +118,7 @@ lang = {
                                 f'Добро пожаловать. Я ждала вас, {database.get_name(m)}. Задавайте вопрос']),
         'get_3_cards': 'Вытянуть три карты',
         'another_alignment': 'Другой расклад',
+        'another_alignment_text': 'Хм.. Взглянем-ка еще раз',
         'start_3_cards': 'Этот расклад даст общее понимание о сложившейся ситуации по вашему вопросу.\n'
                                             'Вытяните три карты, чтобы начать.',
         'open_past': 'Открыть карту прошлого',
@@ -125,6 +128,9 @@ lang = {
         'open_future': 'Открыть карту будущего',
         'future': '*Карта будущего*\nКак будет дальше развиваться эта ситуация?',
         'open_cards': 'Осталось только открыть карты..',
+        'divination': 'Погадать',
+        'divination_text': 'Что ж, для каждой ситуации у меня найдутся карты',
+        'human_design': 'Дизайн человека',
     }
 }
 
@@ -135,6 +141,8 @@ all_lang = {
     'past_present_future': [lang['en']['past_present_future'], lang['ru']['past_present_future']],
     'after_session': [lang['en']['after_session'], lang['ru']['after_session']],
     'get_3_cards': [lang['en']['get_3_cards'], lang['ru']['get_3_cards']],
+    'divination': [lang['en']['divination'], lang['ru']['divination']],
+    'another_alignment': [lang['en']['another_alignment'], lang['ru']['another_alignment']],
     'open_3_cards': [lang['en']['open_past'], lang['ru']['open_past'], lang['en']['open_present'],
                      lang['ru']['open_present'], lang['en']['open_future'], lang['ru']['open_future']],
 }

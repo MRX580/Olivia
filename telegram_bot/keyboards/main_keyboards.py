@@ -47,6 +47,11 @@ class KbReply:
         lang[database.get_language(m)]['fortune_again']
     )
 
+    MAIN_MENU = lambda m: ReplyKeyboardMarkup(resize_keyboard=True, row_width=2).add(
+        lang[database.get_language(m)]['divination'],
+        # lang[database.get_language(m)]['human_design']
+    )
+
     MENU_3_CARDS = lambda m: ReplyKeyboardMarkup(resize_keyboard=True, row_width=1).add(
         lang[database.get_language(m)]['get_3_cards'],
         lang[database.get_language(m)]['another_alignment']

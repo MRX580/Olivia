@@ -6,6 +6,7 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher import FSMContext
 from datetime import datetime, timedelta
+from amplitude import Amplitude, BaseEvent
 
 from create_bot import bot
 from keyboards.main_keyboards import Kb, KbReply
@@ -18,7 +19,9 @@ database = User()
 database_fortune = Fortune()
 database_wisdom = Wisdom()
 
-
+# amplitude = Amplitude("fc9fb5f4119cf988559b41168b901712")
+amplitude = Amplitude("bbdc22a8304dbf12f2aaff6cd40fbdd3")
+#
 class Register(StatesGroup):
     input_name = State()
     input_question = State()
@@ -33,16 +36,42 @@ class WisdomState(StatesGroup):
     wisdom = State()
 
 
+def callback_fun(e, code, message):
+    """A callback function"""
+    print(e)
+    print(code, message)
+amplitude.configuration.callback = callback_fun
 async def welcome(message: types.Message):
     logging.info(
         f'[{message.from_user.id} | {message.from_user.first_name}] Написал {message.text} в {datetime.now()}')
+    # amplitude.track(BaseEvent(event_type='Welcome', user_id=f'{message.from_user.id}', user_properties={'source': 'test'}))
+    # amplitude.track(BaseEvent(event_type="type of event",
+    #   user_id="USER_ID",
+    #   device_id="DEVICE_ID",
+    #   event_properties={
+    #       "source": "notification"
+    #   }))
     if database.is_user_exists(message):
-        await another_alignment(message)
+        await bot.send_message(message.chat.id, lang[database.get_language(message)]['send_welcome'](message),
+                               reply_markup=KbReply.MAIN_MENU(message))
+        await Session.session.set()
     else:
         await Register.input_name.set()
         database.create_user(message)
         await bot.send_message(message.chat.id, 'Всегда рада новому гостю. Вам тут рады. Как я могу называть Вас, '
                                                 'гость?🦄', reply_markup=Kb.LANGUAGES)
+
+
+async def divination(message: types.Message):
+    logging.info(
+        f'[{message.from_user.id} | {message.from_user.first_name}] Написал {message.text} в {datetime.now()}')
+    text = lang[database.get_language(message)]['divination_text']
+    if message.text.lower() in all_lang['another_alignment']:
+        text = lang[database.get_language(message)]['another_alignment_text']
+
+    await bot.send_message(message.chat.id, text,
+                           reply_markup=KbReply.GET_CARD(message))
+    await Session.get_card.set()
 
 
 async def close_session(message: types.Message, state: FSMContext):
@@ -105,14 +134,6 @@ async def thanks(message: types.Message, state: FSMContext):
                 await bot.send_message(message.chat.id, lang[database.get_language(message)]['thanks'](message), reply_markup=KbReply.FULL_TEXT_WITHOUT_THX(message))
             await asyncio.sleep(300)
             await close_session(message, state)
-
-
-async def another_alignment(message: types.Message):
-    logging.info(
-        f'[{message.from_user.id} | {message.from_user.first_name}] Callback: another_alignment | {datetime.now()}')
-    await bot.send_message(message.chat.id, lang[database.get_language(message)]['send_welcome'](message),
-                           reply_markup=KbReply.GET_CARD(message))
-    await Session.get_card.set()
 
 
 async def past_present_future(message: types.Message):
@@ -207,7 +228,7 @@ def register_handlers_client(dp: Dispatcher):
     dp.register_message_handler(get_name, state=Register.input_name)
     dp.register_message_handler(get_question, state=Register.input_question)
     dp.register_message_handler(listen_wisdom, state=WisdomState.wisdom)
-    dp.register_message_handler(another_alignment, Text(equals='Другой расклад'), state=Session.get_card)
+    dp.register_message_handler(divination, Text(equals=[*all_lang['divination'], *all_lang['another_alignment']]), state=Session.get_card)
     dp.register_message_handler(past_present_future, Text(equals=all_lang['past_present_future']), state=Session.get_card)
     dp.register_message_handler(thanks, Text(equals=all_lang['thx']), state=Session.session)
     dp.register_message_handler(after_session, Text(equals=all_lang['after_session']))
