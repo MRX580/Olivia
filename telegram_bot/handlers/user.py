@@ -40,17 +40,26 @@ class WisdomState(StatesGroup):
 #     print(e)
 #     print(code, message)
 # amplitude.configuration.callback = callback_fun
+
+# async def typing(message: types.Message):
+#     msg = await bot.send_message(message.chat.id, 'Typing.')
+#     for i in range(2):
+#         if i != 0:
+#             await bot.edit_message_text(message_id=msg['message_id'], text='Typing.', chat_id=message.chat.id)
+#         await asyncio.sleep(0.5)
+#         for j in range(1, 3):
+#             await bot.edit_message_text(message_id=msg['message_id'], text=msg['text'] + '.' * j, chat_id=message.chat.id)
+#             await asyncio.sleep(0.5)
+#     await msg.delete()
+
+
 async def welcome(message: types.Message):
     logging.info(
         f'[{message.from_user.id} | {message.from_user.first_name}] Написал {message.text} в {datetime.now()}')
     # amplitude.track(BaseEvent(event_type='Welcome', user_id=f'{message.from_user.id}', user_properties={'source': 'test'}))
-    # amplitude.track(BaseEvent(event_type="type of event",
-    #   user_id="USER_ID",
-    #   device_id="DEVICE_ID",
-    #   event_properties={
-    #       "source": "notification"
-    #   }))
+
     if database.is_user_exists(message):
+        # await typing(message)
         await bot.send_message(message.chat.id, lang[database.get_language(message)]['send_welcome'](message),
                                reply_markup=KbReply.MAIN_MENU(message))
         await Session.session.set()
@@ -189,6 +198,7 @@ async def history(message: types.Message, state: FSMContext):
                 data[f'history_{i[3]}'] = i[1]
                 await bot.send_message(message.chat.id, '%s | %s\n%s' % (i[3], i[1], i[2].replace('\t', '')),
                                           reply_markup=Kb.HISTORY_FULL(i[3]))
+                # data[f'{msg["message_id"]}'] = msg
                 count += 1
         else:
             await bot.send_message(message.chat.id, lang[database.get_language(message)]['empty_history'])

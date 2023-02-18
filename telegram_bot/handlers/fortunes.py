@@ -34,6 +34,8 @@ async def get_card(message: types.Message, state: FSMContext, extra_keyboard=Fal
     await asyncio.sleep(2)
     rand_card = random.randint(0, 77)
     lang_user = database.get_language(message)
+    logging.info(
+        f'[{message.from_user.id} | {message.from_user.first_name}] | card: {DIR_IMG} | rand_card: {rand_card} | {datetime.now()}')
     card = os.listdir(DIR_IMG)[rand_card][:-4]
     card_name = decks[card][lang_user]
     path_img = os.path.join(DIR_IMG, f'{card}.jpg')
@@ -74,7 +76,6 @@ async def get_card(message: types.Message, state: FSMContext, extra_keyboard=Fal
 
 
 async def get_fortune(message: types.Message, state: FSMContext):
-    print(message.text)
     if database.get_olivia_energy() > 0:
         if message.text in all_lang['get_card_again'] + all_lang['divination']:
             if message.text in all_lang['get_card_again']:
@@ -120,7 +121,7 @@ async def session_3_cards(message: types.Message, state: FSMContext):
         data['present'] = True if message.text == user_lang['open_present'] or data['present'] else False
         data['future'] = True if message.text == user_lang['open_future'] or data['future'] else False
     if data['past'] and data['present'] and data['future']:
-        await get_card(message, state)
+        await get_card(message, state, mode=choose)
         database.minus_energy()
         await Session.session.set()
         await state.update_data(close_session=datetime.now())
