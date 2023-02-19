@@ -1,0 +1,392 @@
+[
+  [
+    "Шут",
+    "The Fool",
+    0
+  ],
+  [
+    "Маг",
+    "The Magician",
+    0
+  ],
+  [
+    "Жрица",
+    "The High Priestess",
+    0
+  ],
+  [
+    "Императрица",
+    "The Empress",
+    0
+  ],
+  [
+    "Император",
+    "The Emperor",
+    0
+  ],
+  [
+    "Жрец",
+    "The Hierophant",
+    0
+  ],
+  [
+    "Влюбленные",
+    "The Lovers",
+    0
+  ],
+  [
+    "Колесница",
+    "The Chariot",
+    0
+  ],
+  [
+    "Сила",
+    "Strength",
+    0
+  ],
+  [
+    "Отшельник",
+    "The Hermit",
+    0
+  ],
+  [
+    "Колесо Фортуны",
+    "Wheel of Fortune",
+    0
+  ],
+  [
+    "Справедливость",
+    "Justice",
+    0
+  ],
+  [
+    "Повешенный",
+    "The Hanged Man",
+    0
+  ],
+  [
+    "Смерть",
+    "Death",
+    0
+  ],
+  [
+    "Умеренность",
+    "Temperance",
+    0
+  ],
+  [
+    "Дьявол",
+    "The Devil",
+    0
+  ],
+  [
+    "Башня",
+    "The Tower",
+    0
+  ],
+  [
+    "Звезда",
+    "The Star",
+    0
+  ],
+  [
+    "Луна",
+    "The Moon",
+    0
+  ],
+  [
+    "Солнце",
+    "The Sun",
+    0
+  ],
+  [
+    "Суд",
+    "Judgement",
+    0
+  ],
+  [
+    "Мир",
+    "The World",
+    0
+  ],
+  [
+    "Туз Жезлов",
+    "Ace of Wands",
+    0
+  ],
+  [
+    "Двойка Жезлов",
+    "Two of Wands",
+    0
+  ],
+  [
+    "Тройка Жезлов",
+    "Three of Wands",
+    0
+  ],
+  [
+    "Четверка Жезлов",
+    "Four of Wands",
+    0
+  ],
+  [
+    "Пятерка Жезлов",
+    "Five of Wands",
+    0
+  ],
+  [
+    "Шестерка Жезлов",
+    "Six of Wands",
+    0
+  ],
+  [
+    "Семерка Жезлов",
+    "Seven of Wands",
+    0
+  ],
+  [
+    "Восьмерка Жезлов",
+    "Eight of Wands",
+    0
+  ],
+  [
+    "Девятка Жезлов",
+    "Nine of Wands",
+    0
+  ],
+  [
+    "Десятка Жезлов",
+    "Ten of Wands",
+    0
+  ],
+  [
+    "Паж Жезлов",
+    "Page of Wands",
+    0
+  ],
+  [
+    "Рыцарь Жезлов",
+    "Knight of Wands",
+    0
+  ],
+  [
+    "Дама Жезлов",
+    "Queen of Wands",
+    0
+  ],
+  [
+    "Король Жезлов",
+    "King of Wands",
+    0
+  ],
+  [
+    "Туз Чаш",
+    "Ace of Cups",
+    0
+  ],
+  [
+    "Двойка Чаш",
+    "Two of Cups",
+    0
+  ],
+  [
+    "Тройка Чаш",
+    "Three of Cups",
+    0
+  ],
+  [
+    "Четверка Чаш",
+    "Four of Cups",
+    0
+  ],
+  [
+    "Пятерка Чаш",
+    "Five of Cups",
+    0
+  ],
+  [
+    "Шестерка Чаш",
+    "Six of Cups",
+    0
+  ],
+  [
+    "Семерка Чаш",
+    "Seven of Cups",
+    0
+  ],
+  [
+    "Восьмерка Чаш",
+    "Eight of Cups",
+    0
+  ],
+  [
+    "Девятка Чаш",
+    "Nine of Cups",
+    0
+  ],
+  [
+    "Десятка Чаш",
+    "Ten of Cups",
+    0
+  ],
+  [
+    "Паж Чаш",
+    "Page of Cups",
+    0
+  ],
+  [
+    "Рыцарь Чаш",
+    "Knight of Cups",
+    0
+  ],
+  [
+    "Дама Чаш",
+    "Queen of Cups",
+    0
+  ],
+  [
+    "Король Чаш",
+    "King of Cups",
+    0
+  ],
+  [
+    "Туз Мечей",
+    "Ace of Swords",
+    0
+  ],
+  [
+    "Двойка Мечей",
+    "Two of Swords",
+    0
+  ],
+  [
+    "Тройка Мечей",
+    "Three of Swords",
+    0
+  ],
+  [
+    "Четверка Мечей",
+    "Four of Swords",
+    0
+  ],
+  [
+    "Пятерка Мечей",
+    "Five of Swords",
+    0
+  ],
+  [
+    "Шестерка Мечей",
+    "Six of Swords",
+    0
+  ],
+  [
+    "Семерка Мечей",
+    "Seven of Swords",
+    0
+  ],
+  [
+    "Восьмерка Мечей",
+    "Eight of Swords",
+    0
+  ],
+  [
+    "Девятка Мечей",
+    "Nine of Swords",
+    0
+  ],
+  [
+    "Десятка Мечей",
+    "Ten of Swords",
+    0
+  ],
+  [
+    "Паж Мечей",
+    "Page of Swords",
+    0
+  ],
+  [
+    "Рыцарь Мечей",
+    "Knight of Swords",
+    0
+  ],
+  [
+    "Дама Мечей",
+    "Queen of Swords",
+    0
+  ],
+  [
+    "Король Мечей",
+    "King of Swords",
+    0
+  ],
+  [
+    "Туз Пентаклей",
+    "Ace of Pentacles",
+    0
+  ],
+  [
+    "Двойка Пентаклей",
+    "Two of Pentacles",
+    0
+  ],
+  [
+    "Тройка Пентаклей",
+    "Three of Pentacles",
+    0
+  ],
+  [
+    "Четверка Пентаклей",
+    "Four of Pentacles",
+    0
+  ],
+  [
+    "Пятерка Пентаклей",
+    "Five of Pentacles",
+    0
+  ],
+  [
+    "Шестерка Пентаклей",
+    "Six of Pentacles",
+    0
+  ],
+  [
+    "Семерка Пентаклей",
+    "Seven of Pentacles",
+    0
+  ],
+  [
+    "Восьмерка Пентаклей",
+    "Eight of Pentacles",
+    0
+  ],
+  [
+    "Девятка Пентаклей",
+    "Nine of Pentacles",
+    0
+  ],
+  [
+    "Десятка Пентаклей",
+    "Ten of Pentacles",
+    0
+  ],
+  [
+    "Паж Пентаклей",
+    "Page of Pentacles",
+    0
+  ],
+  [
+    "Рыцарь Пентаклей",
+    "Knight of Pentacles",
+    0
+  ],
+  [
+    "Дама Пентаклей",
+    "Queen of Pentacles",
+    0
+  ],
+  [
+    "Король Пентаклей",
+    "King of Pentacles",
+    0
+  ]
+]

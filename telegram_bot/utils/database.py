@@ -1,6 +1,6 @@
 import sqlite3
 import asyncio
-import os
+import json
 
 from datetime import datetime
 from aiogram.types import Message, CallbackQuery
@@ -17,12 +17,25 @@ class Database:
                 'create_at datetime);')
     cur.execute('CREATE TABLE IF NOT EXISTS wisdom (id INTEGER NOT NULL PRIMARY KEY, user_id INT, first_name TEXT, '
                 'message TEXT, create_at datetime);')
-    cur.execute('CREATE TABLE IF NOT EXISTS history(id INTEGER NOT NULL PRIMARY KEY, user_id INT, card TEXT, '
+    cur.execute('CREATE TABLE IF NOT EXISTS history(user_id INT, card TEXT, '
                 'text TEXT, create_at DATETIME);')
     cur.execute('CREATE TABLE IF NOT EXISTS questions(id INTEGER NOT NULL PRIMARY KEY, user_id INT, question TEXT, '
                 'create_at DATETIME);')
     cur.execute('CREATE TABLE IF NOT EXISTS olivia(energy INT, max_energy INT);')
     cur.execute('CREATE TABLE IF NOT EXISTS decks(ru TEXT, en TEXT, reversed BOOL);')
+
+    decks = cur.execute('SELECT * FROM decks').fetchone()
+    if decks is None:
+        with open('sample.json', 'r') as f:
+            data_decks = json.load(f)
+        for item in data_decks:
+            cur.execute('INSERT INTO decks(ru, en, reversed) VALUES(?,?,?)', (item[0], item[1], item[2]))
+            conn.commit()
+
+    data = cur.execute('SELECT * FROM olivia').fetchone()
+    if data is None:
+        cur.execute('INSERT INTO olivia(energy, max_energy) VALUES(?,?)', (3, 3))
+        conn.commit()
 
     async def get_energy(self):
         while True:
