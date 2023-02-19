@@ -26,7 +26,7 @@ class Database:
 
     decks = cur.execute('SELECT * FROM decks').fetchone()
     if decks is None:
-        with open('sample.json', 'r') as f:
+        with open('utils/sample.json', 'r') as f:
             data_decks = json.load(f)
         for item in data_decks:
             cur.execute('INSERT INTO decks(ru, en, reversed) VALUES(?,?,?)', (item[0], item[1], item[2]))
