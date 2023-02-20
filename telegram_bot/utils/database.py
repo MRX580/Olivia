@@ -18,7 +18,7 @@ class Database:
     cur.execute('CREATE TABLE IF NOT EXISTS wisdom (id INTEGER NOT NULL PRIMARY KEY, user_id INT, first_name TEXT, '
                 'message TEXT, create_at datetime);')
     cur.execute('CREATE TABLE IF NOT EXISTS history(user_id INT, card TEXT, '
-                'text TEXT, create_at DATETIME);')
+                'text TEXT, create_at DATETIME, user_q TEXT);')
     cur.execute('CREATE TABLE IF NOT EXISTS questions(id INTEGER NOT NULL PRIMARY KEY, user_id INT, question TEXT, '
                 'create_at DATETIME);')
     cur.execute('CREATE TABLE IF NOT EXISTS olivia(energy INT, max_energy INT);')
@@ -152,13 +152,14 @@ class Fortune(Database):
 
     def add_history(self, tg_user: Message or CallbackQuery,
                     card: str,
-                    text: str):
-        self.cur.execute(f'INSERT INTO history(user_id, card, text, create_at) VALUES(?,?,?,?)',
-                         (tg_user.from_user.id, card, text, datetime.now()))
+                    text: str,
+                    user_q: str):
+        self.cur.execute(f'INSERT INTO history(user_id, card, text, create_at, user_q) VALUES(?,?,?,?,?)',
+                         (tg_user.from_user.id, card, text, datetime.now(), user_q))
         self.conn.commit()
 
     def get_history(self, tg_user: Message or CallbackQuery):
-        return self.cur.execute(f'SELECT * FROM history WHERE user_id = {tg_user.from_user.id}').fetchall()
+        return self.cur.execute(f'SELECT * FROM history WHERE user_id = {tg_user.from_user.id}').fetchall()[::-1]
 
     def check_session(self, tg_user: Message or CallbackQuery):
         data = self.cur.execute(f'SELECT create_at FROM fortune WHERE user_id = {tg_user.from_user.id} ORDER BY '

@@ -2,16 +2,17 @@ import asyncio
 import logging
 
 from aiogram import types, Dispatcher
-from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher import FSMContext
 from datetime import datetime, timedelta
 # from amplitude import Amplitude, BaseEvent
 
-from create_bot import bot
+from create_bot import bot, dp
 from keyboards.main_keyboards import Kb, KbReply
 from utils.database import User, Fortune, Wisdom
 from utils.languages import lang, all_lang
+from callbacks.user import full_text_history, back_text_history
+from states.main import Session, WisdomState, Register
 
 
 logging.basicConfig(filename='bot.log', encoding='utf-8', level=logging.INFO)
@@ -21,18 +22,6 @@ database_wisdom = Wisdom()
 
 # amplitude = Amplitude("bbdc22a8304dbf12f2aaff6cd40fbdd3")
 #
-class Register(StatesGroup):
-    input_name = State()
-    input_question = State()
-
-class Session(StatesGroup):
-    session = State()
-    session_3_cards = State()
-    get_card = State()
-
-
-class WisdomState(StatesGroup):
-    wisdom = State()
 
 
 # def callback_fun(e, code, message):
@@ -157,6 +146,8 @@ async def get_question(message: types.Message, state: FSMContext):
     await bot.send_message(message.chat.id, lang[database.get_language(message)]['what_say'],
                            reply_markup=KbReply.GET_CARD(message))
     await state.finish()
+    async with state.proxy() as data:
+        data['question'] = message.text
     await Session.get_card.set()
 
 
@@ -191,15 +182,17 @@ async def history(message: types.Message, state: FSMContext):
         f'[{message.from_user.id} | {message.from_user.first_name}] command: /memories | {datetime.now()}')
     async with state.proxy() as data:
         if database_fortune.get_history(message):
-            count = 0
-            for i in database_fortune.get_history(message):
+            msg_d = []
+            for count, i in enumerate(database_fortune.get_history(message)):
                 if count == 5:
-                    return
-                data[f'history_{i[3]}'] = i[1]
-                await bot.send_message(message.chat.id, '%s | %s\n%s' % (i[3], i[1], i[2].replace('\t', '')),
-                                          reply_markup=Kb.HISTORY_FULL(i[3]))
-                # data[f'{msg["message_id"]}'] = msg
-                count += 1
+                    break
+                time = i[3][:-7].replace('-', '/') # 2022-11-18 13:04:38.097140
+                msg = await bot.send_message(message.chat.id, '%s\n%s\n\n<b>%s</b>\n<i>%s</i>' % (time, i[4], i[1], i[2].replace('\t', '')), parse_mode='HTML')
+                await bot.edit_message_reply_markup(message_id=msg['message_id'], chat_id=message.chat.id,
+                                                    reply_markup=Kb.HISTORY_FULL(msg["message_id"]))
+                data[f'{msg["message_id"]}'] = {'time': time, 'card_name': i[1], 'full_text': i[2]}
+                msg_d.append(msg["message_id"])
+            dp.register_callback_query_handler(full_text_history, text=msg_d)
         else:
             await bot.send_message(message.chat.id, lang[database.get_language(message)]['empty_history'])
 

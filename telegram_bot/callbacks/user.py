@@ -4,13 +4,14 @@ from datetime import datetime
 
 import aiogram.utils.exceptions
 from aiogram import types, Dispatcher
-from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.dispatcher import FSMContext
 
+from create_bot import dp
 from keyboards.main_keyboards import Kb
 from utils.database import User, Fortune, Decks
 from utils.languages import lang
-from handlers.user import Session
+from states.main import Session
+
 
 logging.basicConfig(filename='bot.log', encoding='utf-8', level=logging.INFO)
 database = User()
@@ -19,9 +20,6 @@ database_decks = Decks()
 
 DIR_TXT = lambda lang: f'static/text/{lang}/day_card'
 
-
-class FortuneState(StatesGroup):
-    question = State()
 
 
 async def switch_language(call: types.CallbackQuery):
@@ -72,29 +70,26 @@ async def full_text(call: types.CallbackQuery, state: FSMContext):
 
 
 async def full_text_history(call: types.CallbackQuery, state: FSMContext):
-    if call.data in database.get_last_5_history(call):
-        async with state.proxy() as data:
-            data = open(f'{DIR_TXT(database.get_language(call))}/{data[f"history_{call.data}"]}.txt', 'r').read()
-            if len(data) > 4096:
-                for x in range(0, len(data), 4096):
-                    await call.message.edit_text(data[x:x + 4096], reply_markup=Kb.HISTORY_BACK(call.data))
-            else:
-                await call.message.edit_text(data, reply_markup=Kb.HISTORY_BACK(call.data))
-
+    async with state.proxy() as data:
+        data = open(f'{DIR_TXT(database.get_language(call))}/{data[f"{call.data}"]["card_name"]}.txt', 'r').read()
+        if len(data) > 4096:
+            for x in range(0, len(data), 4096):
+                print(call.data)
+                await call.message.edit_text(data[x:x + 4096], reply_markup=Kb.HISTORY_BACK(call.data))
+        else:
+            print(call.data)
+            await call.message.edit_text(data, reply_markup=Kb.HISTORY_BACK(call.data))
+        dp.register_callback_query_handler(back_text_history, text=call.data+'_back')
 
 async def back_text_history(call: types.CallbackQuery, state: FSMContext):
-    if call.data in database.get_last_5_history_back(call):
-        async with state.proxy() as data:
-            await call.message.edit_text(f'{call.data[:-5]} | {data[f"history_{call.data[:-5]}"]}\n' +
-                                         open(
-                                             f'{DIR_TXT(database.get_language(call))}/{data[f"history_{call.data[:-5]}"]}.txt',
-                                             'r').read()[:150],
-                                         reply_markup=Kb.HISTORY_FULL(call.data[:-5]))
+    async with state.proxy() as data:
+        call_data = call.data[:-5]
+        text = open(f'{DIR_TXT(database.get_language(call))}/{data[f"{call_data}"]["card_name"]}.txt','r').read()[:150]
+        await call.message.edit_text(f'{data[f"{call_data}"]["time"]}\nquestion...\n\n<b>{data[f"{call_data}"]["card_name"]}</b>\n<i>{text}</i>',
+                                     reply_markup=Kb.HISTORY_FULL(call_data), parse_mode='HTML')
 
 
 def register_handlers_callback(dp: Dispatcher):
     dp.register_callback_query_handler(switch_language, text=['switch english', 'switch russian', 'switch english_command',
                                                               'switch russian_command'], state='*')
     dp.register_callback_query_handler(full_text, text=['full_text'], state=Session.session)
-    dp.register_callback_query_handler(full_text_history, text=database.get_data_history())
-    dp.register_callback_query_handler(back_text_history, text=database.get_data_history_back())

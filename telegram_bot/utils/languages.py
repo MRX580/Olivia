@@ -45,7 +45,8 @@ lang = {
         'end_session': lambda m: choice([f'Happy to serve, {database.get_name(m)}. I\'ll be waiting for you next visit',
                                          f'I\'ll keep everything in my memory for you, {database.get_name(m)}. Welcome '
                                          f'back anytime you feel like asking another question...', 'Thank you for '
-                                         f'sharing your deepest questions, {database.get_name(m)}. Always here for yuo']),
+                                         f'sharing your deepest questions, {database.get_name(m)}. Always here for you'
+                                                                                                   f'']),
         'after_session': choice(['knock-knock', 'Olivia, I need you again', 'ding dong']),
         'start_session': lambda m: choice([f'What\'s the question that is bothering you today, {database.get_name(m)}?',
                                  'Happy to see you again, my friend. What question led you here?',

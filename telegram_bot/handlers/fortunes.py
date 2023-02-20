@@ -34,9 +34,9 @@ async def get_card(message: types.Message, state: FSMContext, extra_keyboard=Fal
     await asyncio.sleep(2)
     rand_card = random.randint(0, 77)
     lang_user = database.get_language(message)
-    logging.info(
-        f'[{message.from_user.id} | {message.from_user.first_name}] | card: {DIR_IMG} | rand_card: {rand_card} | {datetime.now()}')
     card = os.listdir(DIR_IMG)[rand_card][:-4]
+    logging.info(
+        f'[{message.from_user.id} | {message.from_user.first_name}] | card: {card} | lang_user: {lang_user} | {datetime.now()}')
     card_name = decks[card][lang_user]
     path_img = os.path.join(DIR_IMG, f'{card}.jpg')
     path_txt = os.path.join(DIR_TXT(lang_user), f'{card_name}.txt')
@@ -68,8 +68,8 @@ async def get_card(message: types.Message, state: FSMContext, extra_keyboard=Fal
                                  reply_markup=Kb.TEXT_FULL(message))
     async with state.proxy() as data:
         data[msg.message_id] = open(path_txt, 'r').read()
+        database_fortune.add_history(message, card_name, open(path_txt, 'r').read()[0:150], data['question'])
     await state.update_data(card=card_name, thx=False, full_text=False)
-    database_fortune.add_history(message, card_name, open(path_txt, 'r').read()[0:150])
     database_fortune.check_first_try(message)
     if random.randint(1, 10) in [1, 5]:
         database_decks.update_reverse(lang_user, decks[card]['reversed'], card_name)

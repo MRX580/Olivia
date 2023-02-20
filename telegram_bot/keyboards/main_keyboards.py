@@ -8,7 +8,7 @@ database = User()
 class Kb:
 
     HISTORY_FULL = lambda data: InlineKeyboardMarkup(row_width=1).add(
-            InlineKeyboardButton(text='♾', callback_data=data)
+            InlineKeyboardButton(text='...', callback_data=data)
         )
 
     TEXT_FULL = lambda m: InlineKeyboardMarkup(row_width=1).add(
