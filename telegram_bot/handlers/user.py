@@ -186,11 +186,11 @@ async def history(message: types.Message, state: FSMContext):
             for count, i in enumerate(database_fortune.get_history(message)):
                 if count == 5:
                     break
-                time = i[3][:-7].replace('-', '/') # 2022-11-18 13:04:38.097140
-                msg = await bot.send_message(message.chat.id, '%s\n%s\n\n<b>%s</b>\n<i>%s</i>' % (time, i[4], i[1], i[2].replace('\t', '')), parse_mode='HTML')
+                time = i[4][:-7].replace('-', '/') # 2022-11-18 13:04:38.097140
+                msg = await bot.send_message(message.chat.id, '%s\n%s\n\n<b>%s</b>\n<i>%s</i>' % (time, i[5], i[2], i[3].replace('\t', '')), parse_mode='HTML')
                 await bot.edit_message_reply_markup(message_id=msg['message_id'], chat_id=message.chat.id,
                                                     reply_markup=Kb.HISTORY_FULL(msg["message_id"]))
-                data[f'{msg["message_id"]}'] = {'time': time, 'card_name': i[1], 'full_text': i[2]}
+                data[f'{msg["message_id"]}'] = {'time': time, 'card_name': i[2], 'full_text': i[3]}
                 msg_d.append(msg["message_id"])
             dp.register_callback_query_handler(full_text_history, text=msg_d)
         else:
