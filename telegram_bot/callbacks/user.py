@@ -74,10 +74,8 @@ async def full_text_history(call: types.CallbackQuery, state: FSMContext):
         data = open(f'{DIR_TXT(database.get_language(call))}/{data[f"{call.data}"]["card_name"]}.txt', 'r').read()
         if len(data) > 4096:
             for x in range(0, len(data), 4096):
-                print(call.data)
                 await call.message.edit_text(data[x:x + 4096], reply_markup=Kb.HISTORY_BACK(call.data))
         else:
-            print(call.data)
             await call.message.edit_text(data, reply_markup=Kb.HISTORY_BACK(call.data))
         dp.register_callback_query_handler(back_text_history, text=call.data+'_back')
 
