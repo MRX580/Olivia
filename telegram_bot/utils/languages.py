@@ -20,10 +20,10 @@ lang = {
         'question2': 'Great question... I\'ll think about it and answer someday if I can find an answer',
         'session': 'The session ended, you did not answer the question for 10 minutes',
         'fortune_menu': 'Where can I guess this time? 🤔',
-        'add_wisdom_text': 'Please teach me something new! \
-        (what should I add or improve? I will take into account all useful comments and links) \
-        Let\'s make magic together ✨',
-        'answer_wisdom': 'Thank you for your wisdom!\nI will listen to you',
+        'add_feedback_text': 'Any ideas and feedback are sooooo welcome.\n'
+                             'The more you share - the better I become\n'
+                             'Don’t read. Type ⬇️',
+        'answer_feedback': lambda m: f'thank you, {database.get_name(m)}',
         'question_again': lambda m: choice([f'What else is present in your mind, {database.get_name(m)}?',
                                             f'We can search for another answer.\nJust ask your question',
                                             'What else is needed to be clear?\nAsk me...']),
@@ -66,6 +66,7 @@ lang = {
         'divination': 'Divination',
         'divination_text': 'Well, I\'ve got cards for every situation',
         'human_design': 'Human design',
+        'join': 'Your link to join 🌿\n',
     },
 
 
@@ -86,10 +87,10 @@ lang = {
         'question2': 'Отличный вопрос... Подумаю и отвечу когда-нибудь, если смогу найти ответ',
         'session': 'Сеанс завершен, вы не отвечали на вопрос в течении 10 минут',
         'fortune_menu': 'Где же мне погадать в этот раз? 🤔',
-        'add_wisdom_text': 'Пожалуйста, научи меня чему-то новому! \
-(что мне добавить или улучшить? Учту все полезные комментарии и ссылки) \
-Давай творить магию вместе ✨',
-        'answer_wisdom': 'Спасибо за вашу мудрость!\nЯ прислушаюсь к вам',
+        'add_feedback_text': 'Любые идеи и отзывы оооочень приветствуются.\n'
+                             'Чем больше вы делитесь - тем лучше я становлюсь\n'
+                             'Не читайте. Напишите ⬇️',
+        'answer_feedback': lambda m: f'Спасибо, {database.get_name(m)}',
         'question_again': lambda m: choice([f'Что ещё вас волнует, {database.get_name(m)}?',
                                             f'Итак, каким будет Ваш следующий вопрос?',
                                             'Чем ещё заняты Ваши мысли?\nЗадайте вопрос']),
@@ -131,6 +132,7 @@ lang = {
         'divination': 'Погадать',
         'divination_text': 'Что ж, для каждой ситуации у меня найдутся карты',
         'human_design': 'Дизайн человека',
+        'join': 'Ваша ссылка для присоединения 🌿\n',
     }
 }
 

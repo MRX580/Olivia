@@ -197,17 +197,23 @@ async def history(message: types.Message, state: FSMContext):
             await bot.send_message(message.chat.id, lang[database.get_language(message)]['empty_history'])
 
 
-async def add_wisdom(message: types.Message):
+async def feedback(message: types.Message):
     logging.info(
         f'[{message.from_user.id} | {message.from_user.first_name}] command: /addwisdom | {datetime.now()}')
-    await bot.send_message(message.chat.id, lang[database.get_language(message)]['add_wisdom_text'])
+    await bot.send_message(message.chat.id, lang[database.get_language(message)]['add_feedback_text'])
     await WisdomState.wisdom.set()
+
+
+async def join(message: types.Message):
+    logging.info(
+        f'[{message.from_user.id} | {message.from_user.first_name}] command: /join | {datetime.now()}')
+    await bot.send_message(message.chat.id, lang[database.get_language(message)]['join'] + '<a href="https://t.me/+Y32Jaq8sMCFhZTVi">Olivia_Familia</a>', parse_mode='HTML')
 
 
 async def listen_wisdom(message: types.Message):
     logging.info(f'[{message.from_user.id} | {message.from_user.first_name}] Написал {message.text} в {datetime.now()}')
     database_wisdom.add_wisdom(message, message.text)
-    await bot.send_message(message.chat.id, lang[database.get_language(message)]['answer_wisdom'])
+    await bot.send_message(message.chat.id, lang[database.get_language(message)]['answer_feedback'](message))
     await WisdomState.next()
 
 
@@ -224,8 +230,9 @@ async def after_session(message: types.Message, state: FSMContext):
 def register_handlers_client(dp: Dispatcher):
     dp.register_message_handler(welcome, commands=['start', 'help'])
     dp.register_message_handler(about_olivia, commands=['intro'], state='*')
+    dp.register_message_handler(join, commands=['join'], state='*')
     dp.register_message_handler(history, commands=['memories'], state='*')
-    dp.register_message_handler(add_wisdom, commands=['addwisdom'], state='*')
+    dp.register_message_handler(feedback, commands=['feedback'], state='*')
     dp.register_message_handler(change_language, commands=['language'], state='*')
     dp.register_message_handler(get_name, state=Register.input_name)
     dp.register_message_handler(get_question, state=Register.input_question)
