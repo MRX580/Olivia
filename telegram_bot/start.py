@@ -10,6 +10,7 @@ database = Database()
 
 async def plus_energy(dp):
     asyncio.create_task(database.get_energy())
+    asyncio.create_task(database.get_users_value())
 
 
 if __name__ == "__main__":

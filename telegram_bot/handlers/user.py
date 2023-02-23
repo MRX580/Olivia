@@ -144,6 +144,8 @@ async def past_present_future(message: types.Message):
 async def get_question(message: types.Message, state: FSMContext):
     logging.info(
         f'[{message.from_user.id} | {message.from_user.first_name}] Написал {message.text} в {datetime.now()}')
+    amplitude.track(BaseEvent(event_type='UserQuestion', user_id=f'{message.from_user.id}',
+                              event_properties={'question': message.text}))
     await state.update_data(check='True')
     database.add_question(message, message.text)
     await bot.send_message(message.chat.id, lang[database.get_language(message)]['what_say'],

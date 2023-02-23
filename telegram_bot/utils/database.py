@@ -4,6 +4,9 @@ import json
 
 from datetime import datetime
 from aiogram.types import Message, CallbackQuery
+from amplitude import Amplitude, BaseEvent
+
+amplitude = Amplitude("bbdc22a8304dbf12f2aaff6cd40fbdd3")
 
 
 class Database:
@@ -45,6 +48,12 @@ class Database:
             if energy < max_energy:
                 self.cur.execute(f'UPDATE olivia SET energy = energy+1')
             self.conn.commit()
+    async def get_users_value(self):
+        while True:
+            await asyncio.sleep(600)
+            value_users = len(self.cur.execute('SELECT * FROM users').fetchall()[0])
+            amplitude.track(BaseEvent(event_type='PingUsers', user_id='currently_users',
+                                      event_properties={'currently_users': value_users}))
 
     def add_new_table(self, table: str, remove_column: list, add_column: list):
         columns = []
