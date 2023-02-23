@@ -59,7 +59,7 @@ async def full_text(call: types.CallbackQuery, state: FSMContext):
         logging.info(
             f'[{call.from_user.id} | {call.from_user.first_name}] Callback: full_text | {datetime.now()}')
         data = await state.get_data()
-        text = data[call.message.message_id]
+        text = data['text_data']
         if len(text) > 4096:
             await call.message.edit_text(text[:4096])
             await call.message.answer(text[4096:8192])
@@ -79,7 +79,7 @@ async def full_text_history(call: types.CallbackQuery, state: FSMContext):
                 break
         else:
             await call.message.edit_text(data, reply_markup=Kb.HISTORY_BACK(call.data))
-        dp.register_callback_query_handler(back_text_history, text=call.data+'_back')
+        dp.register_callback_query_handler(back_text_history, text=call.data+'_back', state='*')
 
 async def back_text_history(call: types.CallbackQuery, state: FSMContext):
     async with state.proxy() as data:

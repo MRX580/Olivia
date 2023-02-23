@@ -69,6 +69,7 @@ async def get_card(message: types.Message, state: FSMContext, extra_keyboard=Fal
                                parse_mode='markdown')
     msg = await bot.send_message(message.chat.id, open(path_txt, 'r').read()[:380] + '...',
                                  reply_markup=Kb.TEXT_FULL(message))
+    await state.update_data(text_data=open(path_txt, 'r').read())
     async with state.proxy() as data:
         data[msg.message_id] = open(path_txt, 'r').read()
         database_fortune.add_history(message, card_name, open(path_txt, 'r').read()[0:150], data['question'])
