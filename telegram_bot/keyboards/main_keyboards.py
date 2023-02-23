@@ -34,31 +34,31 @@ class Kb:
 class KbReply:
 
     GET_CARD = lambda m: ReplyKeyboardMarkup(resize_keyboard=True, row_width=1).add(
-        lang[database.get_language(m)]['fortune'],
+        lang[database.get_language(m)]['fortune_choice'],
         lang[database.get_language(m)]['past_present_future']
     )
 
     FULL_TEXT = lambda m: ReplyKeyboardMarkup(resize_keyboard=True, row_width=1).add(
-        lang[database.get_language(m)]['fortune_again'],
+        lang[database.get_language(m)]['fortune_again_choice'],
         lang[database.get_language(m)]['thx'],
     )
 
     FULL_TEXT_WITHOUT_THX = lambda m: ReplyKeyboardMarkup(resize_keyboard=True).add(
-        lang[database.get_language(m)]['fortune_again']
+        lang[database.get_language(m)]['fortune_again_choice']
     )
 
     MAIN_MENU = lambda m: ReplyKeyboardMarkup(resize_keyboard=True, row_width=2).add(
-        lang[database.get_language(m)]['divination'],
+        lang[database.get_language(m)]['divination_choice'],
         # lang[database.get_language(m)]['human_design']
     )
 
     MENU_3_CARDS = lambda m: ReplyKeyboardMarkup(resize_keyboard=True, row_width=1).add(
-        lang[database.get_language(m)]['get_3_cards'],
-        lang[database.get_language(m)]['another_alignment']
+        lang[database.get_language(m)]['get_3_cards_choice'],
+        lang[database.get_language(m)]['another_alignment_choice']
     )
 
     AFTER_END_SESSION = lambda m: ReplyKeyboardMarkup(resize_keyboard=True).add(
-        lang[database.get_language(m)]['after_session']
+        lang[database.get_language(m)]['after_session_choice']
     )
 
     PPF_MENU = lambda m, data: ReplyKeyboardMarkup(resize_keyboard=True, row_width=1).add(

@@ -3,6 +3,7 @@ import logging
 import random
 import os
 import io
+import json
 
 from PIL import Image
 from aiogram import types, Dispatcher
@@ -16,6 +17,8 @@ from utils.database import User, Fortune, Decks
 from utils.languages import lang, all_lang
 from utils.decks import decks
 from handlers.user import Session, Register, check_time, close_session
+from amplitude import BaseEvent
+from .user import amplitude
 
 logging.basicConfig(filename='bot.log', encoding='utf-8', level=logging.INFO)
 database = User()
@@ -75,6 +78,28 @@ async def get_card(message: types.Message, state: FSMContext, extra_keyboard=Fal
         database_decks.update_reverse(lang_user, decks[card]['reversed'], card_name)
 
 
+async def get_fortune_three_cards(message: types.Message, state: FSMContext):
+    amplitude.track(BaseEvent(event_type='PSF', user_id=f'{message.from_user.id}'))
+    logging.info(
+        f'[{message.from_user.id} | {message.from_user.first_name}] Callback: get_3_cards | {datetime.now()}')
+    await bot.send_photo(message.chat.id, open('static/img/static/past_present_future.jpg', 'rb'))
+    await state.update_data(past=False, present=False, future=False)
+    await bot.send_message(message.chat.id, lang[database.get_language(message)]['open_cards'],
+                           reply_markup=KbReply.PPF_MENU(message, await state.get_data()))
+    await Session.session_3_cards.set()
+
+
+async def get_fortune_one_cards(message: types.Message, state: FSMContext):
+    amplitude.track(BaseEvent(event_type='OneCard', user_id=f'{message.from_user.id}'))
+    logging.info(
+        f'[{message.from_user.id} | {message.from_user.first_name}] Callback: one_card | {datetime.now()}')
+    await get_card(message, state)
+    database.minus_energy()
+    await Session.session.set()
+    await state.update_data(close_session=json.dumps(datetime.now(), default=str))
+    await asyncio.sleep(3600)
+    await close_session(message, state)
+
 async def get_fortune(message: types.Message, state: FSMContext):
     if database.get_olivia_energy() > 0:
         if message.text in all_lang['get_card_again'] + all_lang['divination']:
@@ -90,23 +115,6 @@ async def get_fortune(message: types.Message, state: FSMContext):
     else:
         await bot.send_message(message.chat.id, lang[database.get_language(message)]['no_energy'])
         return
-    if message.text in all_lang['get_card_again'] + all_lang['get_card']:
-        logging.info(
-            f'[{message.from_user.id} | {message.from_user.first_name}] Callback: one_card | {datetime.now()}')
-        await get_card(message, state)
-        database.minus_energy()
-        await Session.session.set()
-        await state.update_data(close_session=datetime.now())
-        await asyncio.sleep(3600)
-        await close_session(message, state)
-    elif message.text in all_lang['get_3_cards']:
-        logging.info(
-            f'[{message.from_user.id} | {message.from_user.first_name}] Callback: get_3_cards | {datetime.now()}')
-        await bot.send_photo(message.chat.id, open('static/img/static/past_present_future.jpg', 'rb'))
-        await state.update_data(past=False, present=False, future=False)
-        await bot.send_message(message.chat.id, lang[database.get_language(message)]['open_cards'],
-                               reply_markup=KbReply.PPF_MENU(message, await state.get_data()))
-        await Session.session_3_cards.set()
 
 
 
@@ -124,7 +132,7 @@ async def session_3_cards(message: types.Message, state: FSMContext):
         await get_card(message, state, mode=choose)
         database.minus_energy()
         await Session.session.set()
-        await state.update_data(close_session=datetime.now())
+        await state.update_data(close_session=json.dumps(datetime.now(), default=str))
         await asyncio.sleep(3600)
         await close_session(message, state)
         return
@@ -132,6 +140,6 @@ async def session_3_cards(message: types.Message, state: FSMContext):
 
 def register_handlers_client(dp: Dispatcher):
     dp.register_message_handler(get_fortune, Text(equals=all_lang['get_card_again'] + all_lang['divination']), state=Session.session)
-    dp.register_message_handler(get_fortune, Text(equals=all_lang['get_card']), state=Session.get_card)
-    dp.register_message_handler(get_fortune, Text(equals=all_lang['get_3_cards']), state=Session.get_card)
+    dp.register_message_handler(get_fortune_one_cards, Text(equals=all_lang['get_card']), state=Session.get_card)
+    dp.register_message_handler(get_fortune_three_cards, Text(equals=all_lang['get_3_cards']), state=Session.get_card)
     dp.register_message_handler(session_3_cards, Text(equals=all_lang['open_3_cards']), state=Session.session_3_cards)

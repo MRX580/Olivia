@@ -2,3 +2,5 @@ aiogram
 python-dotenv
 openai
 pillow
+aioredis
+redis

@@ -1,17 +1,18 @@
 import asyncio
 import logging
+import json
 
 from aiogram import types, Dispatcher
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher import FSMContext
 from datetime import datetime, timedelta
-# from amplitude import Amplitude, BaseEvent
+from amplitude import Amplitude, BaseEvent
 
 from create_bot import bot, dp
 from keyboards.main_keyboards import Kb, KbReply
 from utils.database import User, Fortune, Wisdom
 from utils.languages import lang, all_lang
-from callbacks.user import full_text_history, back_text_history
+from callbacks.user import full_text_history
 from states.main import Session, WisdomState, Register
 
 
@@ -20,15 +21,15 @@ database = User()
 database_fortune = Fortune()
 database_wisdom = Wisdom()
 
-# amplitude = Amplitude("bbdc22a8304dbf12f2aaff6cd40fbdd3")
-#
+amplitude = Amplitude("bbdc22a8304dbf12f2aaff6cd40fbdd3")
 
 
-# def callback_fun(e, code, message):
-#     """A callback function"""
-#     print(e)
-#     print(code, message)
-# amplitude.configuration.callback = callback_fun
+
+def callback_fun(e, code, message):
+    """A callback function"""
+    print(e)
+    print(code, message)
+amplitude.configuration.callback = callback_fun
 
 # async def typing(message: types.Message):
 #     msg = await bot.send_message(message.chat.id, 'Typing.')
@@ -45,7 +46,6 @@ database_wisdom = Wisdom()
 async def welcome(message: types.Message):
     logging.info(
         f'[{message.from_user.id} | {message.from_user.first_name}] Написал {message.text} в {datetime.now()}')
-    # amplitude.track(BaseEvent(event_type='Welcome', user_id=f'{message.from_user.id}', user_properties={'source': 'test'}))
 
     if database.is_user_exists(message):
         # await typing(message)
@@ -121,7 +121,10 @@ async def thanks(message: types.Message, state: FSMContext):
         f'[{message.from_user.id} | {message.from_user.first_name}] Callback: thx | {datetime.now()}')
     async with state.proxy() as data:
         if not data['thx']:
-            await state.update_data(close_session=datetime.now())
+            amplitude.track(
+            BaseEvent(event_type='Thanks', user_id=f'{message.from_user.id}'))
+            # BaseEvent(event_type='Thanks', user_id=f'{message.from_user.id}', user_properties={'source': 'test'}))
+            await state.update_data(close_session=json.dumps(datetime.now(), default=str))
             await state.update_data(thx=True)
             database.plus_energy()
             if not data['full_text']:
@@ -186,11 +189,13 @@ async def history(message: types.Message, state: FSMContext):
             for count, i in enumerate(database_fortune.get_history(message)):
                 if count == 5:
                     break
-                time = i[3][:-7].replace('-', '/') # 2022-11-18 13:04:38.097140
-                msg = await bot.send_message(message.chat.id, '%s\n%s\n\n<b>%s</b>\n<i>%s</i>' % (time, i[4], i[1], i[2].replace('\t', '')), parse_mode='HTML')
+                time = list(map(int, i[3][:-7].split(' ')[0].split('-'))) + list(map(int, i[3][:-7].split(' ')[1].split(':')))
+                tt = datetime(month=time[1], year=time[0], day=time[2], hour=time[3], minute=time[4], second=time[5]) # 2022-11-18 13:04:38.097140
+                time_result = '%s/%s/%s %s:%s' % (tt.day, tt.month, tt.year, tt.hour, tt.minute)
+                msg = await bot.send_message(message.chat.id, '%s\n%s\n\n<b>%s</b>\n<i>%s</i>' % (time_result, i[4], i[1], i[2].replace('\t', '')), parse_mode='HTML')
                 await bot.edit_message_reply_markup(message_id=msg['message_id'], chat_id=message.chat.id,
                                                     reply_markup=Kb.HISTORY_FULL(msg["message_id"]))
-                data[f'{msg["message_id"]}'] = {'time': time, 'card_name': i[1], 'full_text': i[2], 'user_q': i[4]}
+                data[f'{msg["message_id"]}'] = {'time': time_result, 'card_name': i[1], 'full_text': i[2], 'user_q': i[4]}
                 msg_d.append(msg["message_id"])
             dp.register_callback_query_handler(full_text_history, text=msg_d)
         else:
