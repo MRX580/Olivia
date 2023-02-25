@@ -43,10 +43,17 @@ amplitude.configuration.callback = callback_fun
 #     await msg.delete()
 
 
-async def welcome(message: types.Message):
+def convert_str_in_datetime(time_str: str) -> datetime:
+    time = list(map(int, time_str[:-7].split(' ')[0].split('-'))) + list(map(int, time_str[:-7].split(' ')[1].split(':')))
+    time_result = datetime(month=time[1], year=time[0], day=time[2], hour=time[3], minute=time[4], second=time[5])
+    return time_result
+
+
+
+async def welcome(message: types.Message, state: FSMContext):
     logging.info(
         f'[{message.from_user.id} | {message.from_user.first_name}] Написал {message.text} в {datetime.now()}')
-
+    await state.finish()
     if database.is_user_exists(message):
         # await typing(message)
         await bot.send_message(message.chat.id, lang[database.get_language(message)]['send_welcome'](message),
@@ -74,15 +81,16 @@ async def divination(message: types.Message):
 async def close_session(message: types.Message, state: FSMContext):
     data = await state.get_data()
     try:
+        time = convert_str_in_datetime(data['close_session'])
         if data['thx']:
-            if data['close_session']+timedelta(hours=1) < datetime.now():
+            if time+timedelta(hours=1) < datetime.now():
                 logging.info(
                     f'[{message.from_user.id} | {message.from_user.first_name}] Callback: close_session(thx) | {datetime.now()}')
                 await bot.send_message(message.chat.id, lang[database.get_language(message)]['end_session'](message),
                                        reply_markup=KbReply.AFTER_END_SESSION(message))
                 await state.reset_state()
         else:
-            if data['close_session']+timedelta(minutes=5) < datetime.now():
+            if time+timedelta(minutes=5) < datetime.now():
                 logging.info(
                     f'[{message.from_user.id} | {message.from_user.first_name}] Callback: close_session | {datetime.now()}')
                 await bot.send_message(message.chat.id, lang[database.get_language(message)]['end_session'](message), disable_notification=True,
@@ -204,10 +212,11 @@ async def history(message: types.Message, state: FSMContext):
             await bot.send_message(message.chat.id, lang[database.get_language(message)]['empty_history'])
 
 
-async def feedback(message: types.Message):
+async def feedback(message: types.Message, state: FSMContext):
     logging.info(
         f'[{message.from_user.id} | {message.from_user.first_name}] command: /addwisdom | {datetime.now()}')
     await bot.send_message(message.chat.id, lang[database.get_language(message)]['add_feedback_text'])
+    await state.update_data(last_state=await state.get_state())
     await WisdomState.wisdom.set()
 
 
@@ -217,11 +226,16 @@ async def join(message: types.Message):
     await bot.send_message(message.chat.id, lang[database.get_language(message)]['join'] + '<a href="https://t.me/+Y32Jaq8sMCFhZTVi">Olivia_Familia</a>', parse_mode='HTML')
 
 
-async def listen_wisdom(message: types.Message):
+async def listen_wisdom(message: types.Message, state: FSMContext):
     logging.info(f'[{message.from_user.id} | {message.from_user.first_name}] Написал {message.text} в {datetime.now()}')
     database_wisdom.add_wisdom(message, message.text)
     await bot.send_message(message.chat.id, lang[database.get_language(message)]['answer_feedback'](message))
-    await WisdomState.next()
+    data = await state.get_data() # Сделать проверку на сессию
+    await state.finish()
+    if data['last_state'] == 'Session:session':
+        await Session.session.set()
+    await state.update_data(thx=data['thx'], full_text=data['full_text'])
+
 
 
 async def after_session(message: types.Message, state: FSMContext):
@@ -235,7 +249,7 @@ async def after_session(message: types.Message, state: FSMContext):
 
 
 def register_handlers_client(dp: Dispatcher):
-    dp.register_message_handler(welcome, commands=['start', 'help'])
+    dp.register_message_handler(welcome, commands=['start', 'help'], state='*')
     dp.register_message_handler(about_olivia, commands=['intro'], state='*')
     dp.register_message_handler(join, commands=['join'], state='*')
     dp.register_message_handler(history, commands=['memories'], state='*')

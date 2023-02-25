@@ -93,4 +93,4 @@ async def back_text_history(call: types.CallbackQuery, state: FSMContext):
 def register_handlers_callback(dp: Dispatcher):
     dp.register_callback_query_handler(switch_language, text=['switch english', 'switch russian', 'switch english_command',
                                                               'switch russian_command'], state='*')
-    dp.register_callback_query_handler(full_text, text=['full_text'], state=Session.session)
+    dp.register_callback_query_handler(full_text, text=['full_text'], state=[Session.session, Session.session_3_cards])
