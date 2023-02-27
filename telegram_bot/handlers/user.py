@@ -8,7 +8,7 @@ from aiogram.dispatcher import FSMContext
 from datetime import datetime, timedelta
 from amplitude import Amplitude, BaseEvent
 
-from create_bot import bot, dp
+from create_bot import bot, dp, CODE_MODE
 from keyboards.main_keyboards import Kb, KbReply
 from utils.database import User, Fortune, Wisdom
 from utils.languages import lang, all_lang
@@ -129,9 +129,9 @@ async def thanks(message: types.Message, state: FSMContext):
         f'[{message.from_user.id} | {message.from_user.first_name}] Callback: thx | {datetime.now()}')
     async with state.proxy() as data:
         if not data['thx']:
-            amplitude.track(
-            BaseEvent(event_type='Thanks', user_id=f'{message.from_user.id}'))
-            # BaseEvent(event_type='Thanks', user_id=f'{message.from_user.id}', user_properties={'source': 'test'}))
+            if CODE_MODE == 'PROD':
+                amplitude.track(
+                BaseEvent(event_type='Thanks', user_id=f'{message.from_user.id}'))
             await state.update_data(close_session=json.dumps(datetime.now(), default=str))
             await state.update_data(thx=True)
             database.plus_energy()
@@ -152,8 +152,9 @@ async def past_present_future(message: types.Message):
 async def get_question(message: types.Message, state: FSMContext):
     logging.info(
         f'[{message.from_user.id} | {message.from_user.first_name}] Написал {message.text} в {datetime.now()}')
-    amplitude.track(BaseEvent(event_type='UserQuestion', user_id=f'{message.from_user.id}',
-                              event_properties={'question': message.text}))
+    if CODE_MODE == 'PROD':
+        amplitude.track(BaseEvent(event_type='UserQuestion', user_id=f'{message.from_user.id}',
+                                  event_properties={'question': message.text}))
     await state.update_data(check='True')
     database.add_question(message, message.text)
     await bot.send_message(message.chat.id, lang[database.get_language(message)]['what_say'],
@@ -234,7 +235,16 @@ async def listen_wisdom(message: types.Message, state: FSMContext):
     await state.finish()
     if data['last_state'] == 'Session:session':
         await Session.session.set()
-    await state.update_data(thx=data['thx'], full_text=data['full_text'])
+        await state.update_data(thx=data['thx'], full_text=data['full_text'])
+        return
+    elif data['last_state'] == 'Session:session_3_cards':
+        await Session.session_3_cards.set()
+        if data['past'] and data['present'] and data['future']:
+            await Session.session.set()
+        await state.update_data(thx=data['thx'], full_text=data['full_text'])
+        await state.update_data(past=data['past'], present=data['present'], future=data['future'])
+        return
+    await WisdomState.next()
 
 
 

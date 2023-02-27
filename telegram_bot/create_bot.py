@@ -4,7 +4,7 @@ from dotenv import load_dotenv, find_dotenv
 import os
 
 load_dotenv(find_dotenv())
-
+CODE_MODE = os.getenv('CODE_MODE')
 redis = RedisStorage2(host="127.0.0.1", port=6379)
 bot = Bot(token=os.getenv('TOKEN'))
 dp = Dispatcher(bot, storage=redis)

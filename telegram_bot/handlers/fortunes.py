@@ -11,7 +11,7 @@ from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher import FSMContext
 from datetime import datetime
 
-from create_bot import bot
+from create_bot import bot, CODE_MODE
 from keyboards.main_keyboards import Kb, KbReply
 from utils.database import User, Fortune, Decks
 from utils.languages import lang, all_lang
@@ -80,7 +80,8 @@ async def get_card(message: types.Message, state: FSMContext, extra_keyboard=Fal
 
 
 async def get_fortune_three_cards(message: types.Message, state: FSMContext):
-    amplitude.track(BaseEvent(event_type='PSF', user_id=f'{message.from_user.id}'))
+    if CODE_MODE == 'PROD':
+        amplitude.track(BaseEvent(event_type='PSF', user_id=f'{message.from_user.id}'))
     logging.info(
         f'[{message.from_user.id} | {message.from_user.first_name}] Callback: get_3_cards | {datetime.now()}')
     await bot.send_photo(message.chat.id, open('static/img/static/past_present_future.jpg', 'rb'))
@@ -91,7 +92,8 @@ async def get_fortune_three_cards(message: types.Message, state: FSMContext):
 
 
 async def get_fortune_one_cards(message: types.Message, state: FSMContext):
-    amplitude.track(BaseEvent(event_type='OneCard', user_id=f'{message.from_user.id}'))
+    if CODE_MODE == 'PROD':
+        amplitude.track(BaseEvent(event_type='OneCard', user_id=f'{message.from_user.id}'))
     logging.info(
         f'[{message.from_user.id} | {message.from_user.first_name}] Callback: one_card | {datetime.now()}')
     await get_card(message, state)
