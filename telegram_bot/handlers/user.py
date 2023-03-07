@@ -44,6 +44,7 @@ amplitude.configuration.callback = callback_fun
 
 
 def convert_str_in_datetime(time_str: str) -> datetime:
+    time_str = time_str.replace('"', '')
     time = list(map(int, time_str[:-7].split(' ')[0].split('-'))) + list(map(int, time_str[:-7].split(' ')[1].split(':')))
     time_result = datetime(month=time[1], year=time[0], day=time[2], hour=time[3], minute=time[4], second=time[5])
     return time_result
