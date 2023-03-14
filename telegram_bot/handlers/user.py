@@ -24,13 +24,6 @@ database_wisdom = Wisdom()
 amplitude = Amplitude("bbdc22a8304dbf12f2aaff6cd40fbdd3")
 
 
-
-def callback_fun(e, code, message):
-    """A callback function"""
-    print(e)
-    print(code, message)
-amplitude.configuration.callback = callback_fun
-
 # async def typing(message: types.Message):
 #     msg = await bot.send_message(message.chat.id, 'Typing.')
 #     for i in range(2):
@@ -83,7 +76,7 @@ async def close_session(message: types.Message, state: FSMContext):
     data = await state.get_data()
     try:
         time = convert_str_in_datetime(data['close_session'])
-        if data['thx']:
+        if not data['thx']:
             if time+timedelta(hours=1) < datetime.now():
                 logging.info(
                     f'[{message.from_user.id} | {message.from_user.first_name}] Callback: close_session(thx) | {datetime.now()}')

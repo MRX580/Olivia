@@ -73,7 +73,7 @@ async def get_card(message: types.Message, state: FSMContext, extra_keyboard=Fal
         database_fortune.add_history(message, card_name, open(path_txt, 'r').read()[0:150], data['question'])
     await state.update_data(card=card_name, thx=False, full_text=False)
     database_fortune.check_first_try(message)
-    if random.randint(1, 10) in [1, 5]:
+    if random.randint(1, 10) in [1, 2, 3, 4, 5]:
         database_decks.update_reverse(lang_user, decks[card]['reversed'], card_name)
 
 
