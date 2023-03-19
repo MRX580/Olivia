@@ -227,6 +227,7 @@ async def listen_wisdom(message: types.Message, state: FSMContext):
     await bot.send_message(message.chat.id, lang[database.get_language(message)]['answer_feedback'](message))
     data = await state.get_data() # Сделать проверку на сессию
     await state.finish()
+    await state.update_data(thx=data['question'])
     if data['last_state'] == 'Session:session':
         await Session.session.set()
         await state.update_data(thx=data['thx'], full_text=data['full_text'])
