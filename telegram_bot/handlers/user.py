@@ -24,13 +24,6 @@ database_wisdom = Wisdom()
 amplitude = Amplitude("bbdc22a8304dbf12f2aaff6cd40fbdd3")
 
 
-
-def callback_fun(e, code, message):
-    """A callback function"""
-    print(e)
-    print(code, message)
-amplitude.configuration.callback = callback_fun
-
 # async def typing(message: types.Message):
 #     msg = await bot.send_message(message.chat.id, 'Typing.')
 #     for i in range(2):
@@ -44,6 +37,7 @@ amplitude.configuration.callback = callback_fun
 
 
 def convert_str_in_datetime(time_str: str) -> datetime:
+    time_str = time_str.replace('"', '')
     time = list(map(int, time_str[:-7].split(' ')[0].split('-'))) + list(map(int, time_str[:-7].split(' ')[1].split(':')))
     time_result = datetime(month=time[1], year=time[0], day=time[2], hour=time[3], minute=time[4], second=time[5])
     return time_result
@@ -81,7 +75,7 @@ async def close_session(message: types.Message, state: FSMContext):
     data = await state.get_data()
     try:
         time = convert_str_in_datetime(data['close_session'])
-        if data['thx']:
+        if not data['thx']:
             if time+timedelta(hours=1) < datetime.now():
                 logging.info(
                     f'[{message.from_user.id} | {message.from_user.first_name}] Callback: close_session(thx) | {datetime.now()}')
@@ -220,6 +214,7 @@ async def listen_wisdom(message: types.Message, state: FSMContext):
     await bot.send_message(message.chat.id, lang[database.get_language(message)]['answer_feedback'](message))
     data = await state.get_data() # Сделать проверку на сессию
     await state.finish()
+    await state.update_data(thx=data['question'])
     if data['last_state'] == 'Session:session':
         await Session.session.set()
         await state.update_data(thx=data['thx'], full_text=data['full_text'])

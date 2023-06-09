@@ -184,6 +184,9 @@ all_lang = {
     'get_3_cards': lang['en']['get_3_cards'] + lang['ru']['get_3_cards'],
     'divination': lang['en']['divination'] + lang['ru']['divination'],
     'another_alignment': lang['en']['another_alignment'] + lang['ru']['another_alignment'],
+    'open_present': lang['en']['open_present'] + lang['ru']['open_present'],
+    'open_past': lang['en']['open_past'] + lang['ru']['open_past'],
+    'open_future': lang['en']['open_future'] + lang['ru']['open_future'],
     'open_3_cards': [lang['en']['open_past'], lang['ru']['open_past'], lang['en']['open_present'],
                      lang['ru']['open_present'], lang['en']['open_future'], lang['ru']['open_future']],
 }

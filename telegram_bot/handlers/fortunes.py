@@ -38,15 +38,10 @@ async def get_card(message: types.Message, state: FSMContext, extra_keyboard=Fal
     rand_card = random.randint(0, 77)
     lang_user = database.get_language(message)
     card = os.listdir(DIR_IMG)[rand_card][:-4]
-    logging.info(
-        f'[{message.from_user.id} | {message.from_user.first_name}] | card: {card} | lang_user: {lang_user} | {datetime.now()}')
     card_name = decks[card][lang_user]
     path_img = os.path.join(DIR_IMG, f'{card}.jpg')
     path_txt = os.path.join(DIR_TXT(lang_user), f'{card_name}.txt')
     is_reverse = database_decks.get_reversed(lang_user, card_name)
-    logging.info(
-        f'[{message.from_user.id} | {message.from_user.first_name}] card: {card_name} | reverse: {bool(is_reverse)}\n'
-        f'path_txt - {path_txt}\npath_img - {path_img} | {datetime.now()}')
     im = Image.open(open(path_img, 'rb'))
     buffer = io.BytesIO()
     if is_reverse:
@@ -73,9 +68,21 @@ async def get_card(message: types.Message, state: FSMContext, extra_keyboard=Fal
     async with state.proxy() as data:
         data[msg.message_id] = open(path_txt, 'r', encoding='utf-8').read()
         database_fortune.add_history(message, card_name, open(path_txt, 'r', encoding='utf-8').read()[0:150], data['question'])
+    logging.info(
+        f'[{message.from_user.id} | {message.from_user.first_name}] card: {card_name} | reverse: {bool(is_reverse)}\n'
+        f'path_txt - {path_txt}\npath_img - {path_img} | {datetime.now()}')
+    msg = await bot.send_message(message.chat.id, open(path_txt, 'r').read()[:380] + '...',
+                                 reply_markup=Kb.TEXT_FULL(message))
+    await state.update_data(text_data=open(path_txt, 'r').read())
+    async with state.proxy() as data:
+        data[msg.message_id] = open(path_txt, 'r').read()
+        try:
+            database_fortune.add_history(message, card_name, open(path_txt, 'r').read()[0:150], data['question'])
+        except KeyError:
+            database_fortune.add_history(message, card_name, open(path_txt, 'r').read()[0:150], 'Error')
     await state.update_data(card=card_name, thx=False, full_text=False)
     database_fortune.check_first_try(message)
-    if random.randint(1, 10) in [1, 5]:
+    if random.randint(1, 10) in [1, 2, 3, 4, 5]:
         database_decks.update_reverse(lang_user, decks[card]['reversed'], card_name)
 
 
@@ -123,14 +130,15 @@ async def get_fortune(message: types.Message, state: FSMContext):
 
 async def session_3_cards(message: types.Message, state: FSMContext):
     user_lang = lang[database.get_language(message)]
+    user_all_lang = all_lang
     async with state.proxy() as data:
         PPF = {user_lang['open_past']: 'past',
                user_lang['open_present']: 'present',
                user_lang['open_future']: 'future'}
         choose = PPF.get(message.text)
-        data['past'] = True if message.text == user_lang['open_past'] or data['past'] else False
-        data['present'] = True if message.text == user_lang['open_present'] or data['present'] else False
-        data['future'] = True if message.text == user_lang['open_future'] or data['future'] else False
+        data['past'] = True if message.text in user_all_lang['open_past'] or data['past'] else False
+        data['present'] = True if message.text in user_all_lang['open_present'] or data['present'] else False
+        data['future'] = True if message.text in user_all_lang['open_future'] or data['future'] else False
     if data['past'] and data['present'] and data['future']:
         await get_card(message, state, mode=choose)
         database.minus_energy()
