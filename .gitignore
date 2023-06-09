@@ -1,6 +1,6 @@
 venv
 .idea
-.env
+telegram_bot/.env
 telegram_bot/utils/users.db
 telegram_bot/bot.log
 telegram_bot/utils/decks_1

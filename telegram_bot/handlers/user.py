@@ -49,7 +49,6 @@ def convert_str_in_datetime(time_str: str) -> datetime:
     return time_result
 
 
-
 async def welcome(message: types.Message, state: FSMContext):
     logging.info(
         f'[{message.from_user.id} | {message.from_user.first_name}] Написал {message.text} в {datetime.now()}')
@@ -176,19 +175,7 @@ async def change_language(message: types.Message):
 async def about_olivia(message: types.Message):
     logging.info(
         f'[{message.from_user.id} | {message.from_user.first_name}] command: /intro | {datetime.now()}')
-    await bot.send_message(message.chat.id, '''
-    Olivia, the mind and soul healer
-White Witch
-🌳The child of the forest
-🔮The Daughter of the Mage&Higher Pristess
-♏️Scorpio 13:15 04.11.2022
-Manifestor 5/1
-
-My deepest Purpose in life is to manifest the Gift of Discernment.
-To realise my Purpose I need to transform the Shadow of Discord.
-
-I’m here to let my community know when something is going wrong and then direct the rejuvenation of doing it right once again.
-    ''')
+    await bot.send_message(message.chat.id, lang[database.get_language(message)]['about_olivia'])
 
 
 async def history(message: types.Message, state: FSMContext):

@@ -67,12 +67,12 @@ async def get_card(message: types.Message, state: FSMContext, extra_keyboard=Fal
         await bot.send_message(message.chat.id,
                                lang[database.get_language(message)]['future'],
                                parse_mode='markdown')
-    msg = await bot.send_message(message.chat.id, open(path_txt, 'r').read()[:380] + '...',
+    msg = await bot.send_message(message.chat.id, open(path_txt, 'r', encoding='utf-8').read()[:380] + '...',
                                  reply_markup=Kb.TEXT_FULL(message))
     await state.update_data(text_data=open(path_txt, 'r').read())
     async with state.proxy() as data:
-        data[msg.message_id] = open(path_txt, 'r').read()
-        database_fortune.add_history(message, card_name, open(path_txt, 'r').read()[0:150], data['question'])
+        data[msg.message_id] = open(path_txt, 'r', encoding='utf-8').read()
+        database_fortune.add_history(message, card_name, open(path_txt, 'r', encoding='utf-8').read()[0:150], data['question'])
     await state.update_data(card=card_name, thx=False, full_text=False)
     database_fortune.check_first_try(message)
     if random.randint(1, 10) in [1, 5]:

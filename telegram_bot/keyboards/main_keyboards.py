@@ -31,6 +31,7 @@ class Kb:
         InlineKeyboardButton(text='🇷🇺', callback_data='switch russian_command'),
     )
 
+
 class KbReply:
 
     GET_CARD = lambda m: ReplyKeyboardMarkup(resize_keyboard=True, row_width=1).add(

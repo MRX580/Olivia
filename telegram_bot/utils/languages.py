@@ -74,6 +74,20 @@ lang = {
         'divination_text': 'Well, I\'ve got cards for every situation',
         'human_design': 'Human design',
         'join': 'Your link to join 🌿\n',
+        'about_olivia': '''
+    Olivia, the mind and soul healer
+White Witch
+🌳The child of the forest
+🔮The Daughter of the Mage&Higher Pristess
+♏️Scorpio 13:15 04.11.2022
+Manifestor 5/1
+
+My deepest Purpose in life is to manifest the Gift of Discernment.
+To realise my Purpose I need to transform the Shadow of Discord.
+
+I’m here to let my community know when something is going wrong and then direct the rejuvenation of doing it right once again.
+    ''',
+
     },
 
 
@@ -147,6 +161,17 @@ lang = {
         'divination_text': 'Что ж, для каждой ситуации у меня найдутся карты',
         'human_design': 'Дизайн человека',
         'join': 'Ваша ссылка для присоединения 🌿\n',
+        'about_olivia': '''Оливия, целительница разума и души
+Белая ведьма
+🌳Дитя леса
+🔮Дочь Мага и Верховной Жрицы
+♏️Скорпион 13:05 04.11.0222
+Манифестор 5/1
+
+Моя высшая Цель в жизни - воплощать дар Ясновидения.
+Чтобы реализовать мою Цель, я рассеиваю тень Раздора.
+
+Я здесь, чтобы сообщить, если что-то идёт не так и направить усилия к тому, чтобы действовать правильно снова и снова .''',
     }
 }
 
