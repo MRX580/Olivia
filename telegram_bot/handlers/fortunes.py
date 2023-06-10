@@ -35,7 +35,10 @@ async def get_card(message: types.Message, state: FSMContext, extra_keyboard=Fal
         extra_keyboard = KbReply.FULL_TEXT(message)
     await bot.send_animation(message.chat.id, 'https://media.giphy.com/media/3oKIPolAotPmdjjVK0/giphy.gif')
     await asyncio.sleep(2)
+    temp_data = await state.get_data()
     rand_card = random.randint(0, 77)
+    while rand_card in temp_data.get('rand_card') if temp_data.get('rand_card') else []:
+        rand_card = random.randint(0, 77)
     lang_user = database.get_language(message)
     card = os.listdir(DIR_IMG)[rand_card][:-4]
     logging.info(
@@ -69,7 +72,10 @@ async def get_card(message: types.Message, state: FSMContext, extra_keyboard=Fal
                                parse_mode='markdown')
     msg = await bot.send_message(message.chat.id, open(path_txt, 'r', encoding='utf-8').read()[:380] + '...',
                                  reply_markup=Kb.TEXT_FULL(message))
-    await state.update_data(text_data=open(path_txt, 'r').read())
+    second_rand_card = None
+    if isinstance(temp_data.get('rand_card'), list):
+        second_rand_card = temp_data.get('rand_card')[1]
+    await state.update_data(text_data=open(path_txt, 'r', encoding='utf-8').read(), rand_card=[rand_card, second_rand_card])
     async with state.proxy() as data:
         data[msg.message_id] = open(path_txt, 'r', encoding='utf-8').read()
         database_fortune.add_history(message, card_name, open(path_txt, 'r', encoding='utf-8').read()[0:150], data['question'])
@@ -103,6 +109,7 @@ async def get_fortune_one_cards(message: types.Message, state: FSMContext):
     await asyncio.sleep(3600)
     await close_session(message, state)
 
+
 async def get_fortune(message: types.Message, state: FSMContext):
     if database.get_olivia_energy() > 0:
         if message.text in all_lang['get_card_again'] + all_lang['divination']:
@@ -118,7 +125,6 @@ async def get_fortune(message: types.Message, state: FSMContext):
     else:
         await bot.send_message(message.chat.id, lang[database.get_language(message)]['no_energy'])
         return
-
 
 
 async def session_3_cards(message: types.Message, state: FSMContext):

@@ -15,7 +15,6 @@ from utils.languages import lang, all_lang
 from callbacks.user import full_text_history
 from states.main import Session, WisdomState, Register
 
-
 logging.basicConfig(filename='bot.log', encoding='utf-8', level=logging.INFO)
 database = User()
 database_fortune = Fortune()
@@ -24,12 +23,14 @@ database_wisdom = Wisdom()
 amplitude = Amplitude("bbdc22a8304dbf12f2aaff6cd40fbdd3")
 
 
-
 def callback_fun(e, code, message):
     """A callback function"""
     print(e)
     print(code, message)
+
+
 amplitude.configuration.callback = callback_fun
+
 
 # async def typing(message: types.Message):
 #     msg = await bot.send_message(message.chat.id, 'Typing.')
@@ -44,7 +45,8 @@ amplitude.configuration.callback = callback_fun
 
 
 def convert_str_in_datetime(time_str: str) -> datetime:
-    time = list(map(int, time_str[:-7].split(' ')[0].split('-'))) + list(map(int, time_str[:-7].split(' ')[1].split(':')))
+    time = list(map(int, time_str[:-7].split(' ')[0].split('-'))) + list(
+        map(int, time_str[:-7].split(' ')[1].split(':')))
     time_result = datetime(month=time[1], year=time[0], day=time[2], hour=time[3], minute=time[4], second=time[5])
     return time_result
 
@@ -82,21 +84,23 @@ async def close_session(message: types.Message, state: FSMContext):
     try:
         time = convert_str_in_datetime(data['close_session'])
         if data['thx']:
-            if time+timedelta(hours=1) < datetime.now():
+            if time + timedelta(hours=1) < datetime.now():
                 logging.info(
                     f'[{message.from_user.id} | {message.from_user.first_name}] Callback: close_session(thx) | {datetime.now()}')
                 await bot.send_message(message.chat.id, lang[database.get_language(message)]['end_session'](message),
                                        reply_markup=KbReply.AFTER_END_SESSION(message))
                 await state.reset_state()
         else:
-            if time+timedelta(minutes=5) < datetime.now():
+            if time + timedelta(minutes=5) < datetime.now():
                 logging.info(
                     f'[{message.from_user.id} | {message.from_user.first_name}] Callback: close_session | {datetime.now()}')
-                await bot.send_message(message.chat.id, lang[database.get_language(message)]['end_session'](message), disable_notification=True,
+                await bot.send_message(message.chat.id, lang[database.get_language(message)]['end_session'](message),
+                                       disable_notification=True,
                                        reply_markup=KbReply.AFTER_END_SESSION(message))
                 await state.reset_state()
     except KeyError:
         pass
+
 
 async def check_time(message: types.Message, state: FSMContext):
     data = await state.get_data()
@@ -130,7 +134,7 @@ async def thanks(message: types.Message, state: FSMContext):
         if not data['thx']:
             if CODE_MODE == 'PROD':
                 amplitude.track(
-                BaseEvent(event_type='Thanks', user_id=f'{message.from_user.id}'))
+                    BaseEvent(event_type='Thanks', user_id=f'{message.from_user.id}'))
             await state.update_data(close_session=json.dumps(datetime.now(), default=str))
             await state.update_data(thx=True)
             database.plus_energy()
@@ -138,7 +142,8 @@ async def thanks(message: types.Message, state: FSMContext):
                 await bot.send_message(message.chat.id, lang[database.get_language(message)]['thanks'](message),
                                        reply_markup=KbReply.FULL_TEXT_WITHOUT_THX(message))
             else:
-                await bot.send_message(message.chat.id, lang[database.get_language(message)]['thanks'](message), reply_markup=KbReply.FULL_TEXT_WITHOUT_THX(message))
+                await bot.send_message(message.chat.id, lang[database.get_language(message)]['thanks'](message),
+                                       reply_markup=KbReply.FULL_TEXT_WITHOUT_THX(message))
             await asyncio.sleep(300)
             await close_session(message, state)
 
@@ -158,7 +163,15 @@ async def get_question(message: types.Message, state: FSMContext):
     database.add_question(message, message.text)
     await bot.send_message(message.chat.id, lang[database.get_language(message)]['what_say'],
                            reply_markup=KbReply.GET_CARD(message))
+    data = await state.get_data('rand_card')
+    try:
+        rand_card = data['rand_card']
+        print(rand_card)
+        rand_card[0], rand_card[1] = rand_card[1], rand_card[0]
+    except KeyError:
+        rand_card = None
     await state.finish()
+    await state.update_data(rand_card=rand_card)
     async with state.proxy() as data:
         data['question'] = message.text
     await Session.get_card.set()
@@ -187,13 +200,17 @@ async def history(message: types.Message, state: FSMContext):
             for count, i in enumerate(database_fortune.get_history(message)):
                 if count == 5:
                     break
-                time = list(map(int, i[3][:-7].split(' ')[0].split('-'))) + list(map(int, i[3][:-7].split(' ')[1].split(':')))
-                tt = datetime(month=time[1], year=time[0], day=time[2], hour=time[3], minute=time[4], second=time[5]) # 2022-11-18 13:04:38.097140
+                time = list(map(int, i[3][:-7].split(' ')[0].split('-'))) + list(
+                    map(int, i[3][:-7].split(' ')[1].split(':')))
+                tt = datetime(month=time[1], year=time[0], day=time[2], hour=time[3], minute=time[4],
+                              second=time[5])  # 2022-11-18 13:04:38.097140
                 time_result = '%s/%s/%s %s:%s' % (tt.day, tt.month, tt.year, tt.hour, tt.minute)
-                msg = await bot.send_message(message.chat.id, '%s\n%s\n\n<b>%s</b>\n<i>%s</i>' % (time_result, i[4], i[1], i[2].replace('\t', '')), parse_mode='HTML')
+                msg = await bot.send_message(message.chat.id, '%s\n%s\n\n<b>%s</b>\n<i>%s</i>' % (
+                time_result, i[4], i[1], i[2].replace('\t', '')), parse_mode='HTML')
                 await bot.edit_message_reply_markup(message_id=msg['message_id'], chat_id=message.chat.id,
                                                     reply_markup=Kb.HISTORY_FULL(msg["message_id"]))
-                data[f'{msg["message_id"]}'] = {'time': time_result, 'card_name': i[1], 'full_text': i[2], 'user_q': i[4]}
+                data[f'{msg["message_id"]}'] = {'time': time_result, 'card_name': i[1], 'full_text': i[2],
+                                                'user_q': i[4]}
                 msg_d.append(msg["message_id"])
             dp.register_callback_query_handler(full_text_history, text=msg_d, state='*')
         else:
@@ -211,14 +228,15 @@ async def feedback(message: types.Message, state: FSMContext):
 async def join(message: types.Message):
     logging.info(
         f'[{message.from_user.id} | {message.from_user.first_name}] command: /join | {datetime.now()}')
-    await bot.send_message(message.chat.id, lang[database.get_language(message)]['join'] + '<a href="https://t.me/+Y32Jaq8sMCFhZTVi">Olivia_Familia</a>', parse_mode='HTML')
+    await bot.send_message(message.chat.id, lang[database.get_language(message)][
+        'join'] + '<a href="https://t.me/+Y32Jaq8sMCFhZTVi">Olivia_Familia</a>', parse_mode='HTML')
 
 
 async def listen_wisdom(message: types.Message, state: FSMContext):
     logging.info(f'[{message.from_user.id} | {message.from_user.first_name}] Написал {message.text} в {datetime.now()}')
     database_wisdom.add_wisdom(message, message.text)
     await bot.send_message(message.chat.id, lang[database.get_language(message)]['answer_feedback'](message))
-    data = await state.get_data() # Сделать проверку на сессию
+    data = await state.get_data()  # Сделать проверку на сессию
     await state.finish()
     if data['last_state'] == 'Session:session':
         await Session.session.set()
@@ -232,7 +250,6 @@ async def listen_wisdom(message: types.Message, state: FSMContext):
         await state.update_data(past=data['past'], present=data['present'], future=data['future'])
         return
     await WisdomState.next()
-
 
 
 async def after_session(message: types.Message, state: FSMContext):
@@ -255,7 +272,9 @@ def register_handlers_client(dp: Dispatcher):
     dp.register_message_handler(get_name, state=Register.input_name)
     dp.register_message_handler(get_question, state=Register.input_question)
     dp.register_message_handler(listen_wisdom, state=WisdomState.wisdom)
-    dp.register_message_handler(divination, Text(equals=[*all_lang['divination'], *all_lang['another_alignment']]), state=Session.get_card)
-    dp.register_message_handler(past_present_future, Text(equals=all_lang['past_present_future']), state=Session.get_card)
+    dp.register_message_handler(divination, Text(equals=[*all_lang['divination'], *all_lang['another_alignment']]),
+                                state=Session.get_card)
+    dp.register_message_handler(past_present_future, Text(equals=all_lang['past_present_future']),
+                                state=Session.get_card)
     dp.register_message_handler(thanks, Text(equals=all_lang['thx']), state=Session.session)
     dp.register_message_handler(after_session, Text(equals=all_lang['after_session']))
