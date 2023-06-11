@@ -75,13 +75,15 @@ async def get_card(message: types.Message, state: FSMContext, extra_keyboard=Fal
     second_rand_card = None
     if isinstance(temp_data.get('rand_card'), list):
         second_rand_card = temp_data.get('rand_card')[1]
-    await state.update_data(text_data=open(path_txt, 'r', encoding='utf-8').read(), rand_card=[rand_card, second_rand_card])
+    await state.update_data(text_data=open(path_txt, 'r', encoding='utf-8').read(),
+                            rand_card=[rand_card, second_rand_card])
     async with state.proxy() as data:
         data[msg.message_id] = open(path_txt, 'r', encoding='utf-8').read()
-        database_fortune.add_history(message, card_name, open(path_txt, 'r', encoding='utf-8').read()[0:150], data['question'])
+        database_fortune.add_history(message, card_name, open(path_txt, 'r', encoding='utf-8').read()[0:150],
+                                     data['question'])
     await state.update_data(card=card_name, thx=False, full_text=False)
     database_fortune.check_first_try(message)
-    if random.randint(1, 10) in [1, 5]:
+    if random.randint(1, 10) in [1, 2, 3, 4, 5]:
         database_decks.update_reverse(lang_user, decks[card]['reversed'], card_name)
 
 
@@ -114,9 +116,11 @@ async def get_fortune(message: types.Message, state: FSMContext):
     if database.get_olivia_energy() > 0:
         if message.text in all_lang['get_card_again'] + all_lang['divination']:
             if message.text in all_lang['get_card_again']:
-                await bot.send_message(message.chat.id, lang[database.get_language(message)]['question_again'](message), reply_markup=types.ReplyKeyboardRemove())
+                await bot.send_message(message.chat.id, lang[database.get_language(message)]['question_again'](message),
+                                       reply_markup=types.ReplyKeyboardRemove())
             else:
-                await bot.send_message(message.chat.id, lang[database.get_language(message)]['question_start'](message), reply_markup=types.ReplyKeyboardRemove())
+                await bot.send_message(message.chat.id, lang[database.get_language(message)]['question_start'](message),
+                                       reply_markup=types.ReplyKeyboardRemove())
             await Register.input_question.set()
             await state.update_data(check='False')
             await asyncio.sleep(45)
@@ -147,8 +151,10 @@ async def session_3_cards(message: types.Message, state: FSMContext):
         return
     await get_card(message, state, KbReply.PPF_MENU(message, await state.get_data()), choose)
 
+
 def register_handlers_client(dp: Dispatcher):
-    dp.register_message_handler(get_fortune, Text(equals=all_lang['get_card_again'] + all_lang['divination']), state=Session.session)
+    dp.register_message_handler(get_fortune, Text(equals=all_lang['get_card_again'] + all_lang['divination']),
+                                state=Session.session)
     dp.register_message_handler(get_fortune_one_cards, Text(equals=all_lang['get_card']), state=Session.get_card)
     dp.register_message_handler(get_fortune_three_cards, Text(equals=all_lang['get_3_cards']), state=Session.get_card)
     dp.register_message_handler(session_3_cards, Text(equals=all_lang['open_3_cards']), state=Session.session_3_cards)
