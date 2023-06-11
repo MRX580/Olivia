@@ -166,7 +166,6 @@ async def get_question(message: types.Message, state: FSMContext):
     data = await state.get_data('rand_card')
     try:
         rand_card = data['rand_card']
-        print(rand_card)
         rand_card[0], rand_card[1] = rand_card[1], rand_card[0]
     except KeyError:
         rand_card = None
