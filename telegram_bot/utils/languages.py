@@ -87,7 +87,7 @@ To realise my Purpose I need to transform the Shadow of Discord.
 
 I’m here to let my community know when something is going wrong and then direct the rejuvenation of doing it right once again.
     ''',
-
+        'typing': 'Typing.',
     },
 
 
@@ -172,6 +172,7 @@ I’m here to let my community know when something is going wrong and then direc
 Чтобы реализовать мою Цель, я рассеиваю тень Раздора.
 
 Я здесь, чтобы сообщить, если что-то идёт не так и направить усилия к тому, чтобы действовать правильно снова и снова .''',
+        'typing': 'Печатает.',
     }
 }
 

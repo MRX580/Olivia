@@ -30,9 +30,24 @@ DIR_TXT = lambda lang: f'static/text/{lang}/day_card'
 DIR_REVERSE = lambda lang: f'static/text/{lang}/reverse'
 
 
+async def typing(message: types.Message):
+    msg = await bot.send_message(message.chat.id, lang[database.get_language(message)]['typing'])
+    for i in range(2):
+        if i != 0:
+            await bot.edit_message_text(message_id=msg['message_id'], text=msg['text']
+                                        , chat_id=message.chat.id)
+        await asyncio.sleep(0.5)
+        for j in range(1, 3):
+            await bot.edit_message_text(message_id=msg['message_id'], text=msg['text'] + '.' * j,
+                                        chat_id=message.chat.id)
+            await asyncio.sleep(0.5)
+    await msg.delete()
+
+
 async def get_card(message: types.Message, state: FSMContext, extra_keyboard=False, mode=''):
     if not extra_keyboard:
         extra_keyboard = KbReply.FULL_TEXT(message)
+    await typing(message)
     await bot.send_animation(message.chat.id, 'https://media.giphy.com/media/3oKIPolAotPmdjjVK0/giphy.gif')
     await asyncio.sleep(2)
     temp_data = await state.get_data()

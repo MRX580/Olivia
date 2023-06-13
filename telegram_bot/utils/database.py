@@ -48,6 +48,7 @@ class Database:
             if energy < max_energy:
                 self.cur.execute(f'UPDATE olivia SET energy = energy+1')
             self.conn.commit()
+
     async def get_users_value(self):
         while True:
             await asyncio.sleep(600)

@@ -32,18 +32,6 @@ def callback_fun(e, code, message):
 amplitude.configuration.callback = callback_fun
 
 
-# async def typing(message: types.Message):
-#     msg = await bot.send_message(message.chat.id, 'Typing.')
-#     for i in range(2):
-#         if i != 0:
-#             await bot.edit_message_text(message_id=msg['message_id'], text='Typing.', chat_id=message.chat.id)
-#         await asyncio.sleep(0.5)
-#         for j in range(1, 3):
-#             await bot.edit_message_text(message_id=msg['message_id'], text=msg['text'] + '.' * j, chat_id=message.chat.id)
-#             await asyncio.sleep(0.5)
-#     await msg.delete()
-
-
 def convert_str_in_datetime(time_str: str) -> datetime:
     time = list(map(int, time_str[:-7].split(' ')[0].split('-'))) + list(
         map(int, time_str[:-7].split(' ')[1].split(':')))
