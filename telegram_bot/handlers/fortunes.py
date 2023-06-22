@@ -87,6 +87,7 @@ async def get_card(message: types.Message, state: FSMContext, extra_keyboard=Fal
                                parse_mode='markdown')
     msg = await bot.send_message(message.chat.id, interpretation_text[:380] + '...',
                                  reply_markup=Kb.TEXT_FULL(message))
+    database.change_last_attempt(message)
     message_id = msg.message_id
     second_rand_card = None
     if isinstance(temp_data.get('rand_card'), list):

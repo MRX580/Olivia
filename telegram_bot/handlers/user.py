@@ -44,7 +44,6 @@ async def welcome(message: types.Message, state: FSMContext):
         f'[{message.from_user.id} | {message.from_user.first_name}] Написал {message.text} в {datetime.now()}')
     await state.finish()
     if database.is_user_exists(message):
-        # await typing(message)
         await bot.send_message(message.chat.id, lang[database.get_language(message)]['send_welcome'](message),
                                reply_markup=KbReply.MAIN_MENU(message))
         await Session.session.set()
@@ -98,7 +97,7 @@ async def check_time(message: types.Message, state: FSMContext):
         if data['check'] == 'False':
             await bot.send_message(message.chat.id, lang[database.get_language(message)]['get_card'],
                                    reply_markup=KbReply.GET_CARD(message))
-            await state.update_data(check='True')
+            await state.update_data(check='True', question=None)
             await Session.get_card.set()
     except KeyError:
         pass
@@ -125,6 +124,7 @@ async def thanks(message: types.Message, state: FSMContext):
                     BaseEvent(event_type='Thanks', user_id=f'{message.from_user.id}'))
             await state.update_data(close_session=json.dumps(datetime.now(), default=str))
             await state.update_data(thx=True)
+            database.add_thanks(data['message_id'])
             database.plus_energy()
             if not data['full_text']:
                 await bot.send_message(message.chat.id, lang[database.get_language(message)]['thanks'](message),

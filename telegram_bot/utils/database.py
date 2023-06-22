@@ -2,7 +2,7 @@ import sqlite3
 import asyncio
 import json
 
-from datetime import datetime
+from datetime import datetime, date
 from aiogram.types import Message, CallbackQuery
 from amplitude import Amplitude, BaseEvent
 
@@ -24,7 +24,7 @@ class Database:
                 'message TEXT, create_at datetime);')
 
     cur.execute('CREATE TABLE IF NOT EXISTS history(user_id INT, card TEXT, '
-                'text TEXT, create_at DATETIME, user_q TEXT, reaction TEXT, message_id INT);')
+                'text TEXT, create_at DATETIME, user_q TEXT, reaction TEXT, message_id INT, thanks BOOL);')
 
     cur.execute('CREATE TABLE IF NOT EXISTS questions(id INTEGER NOT NULL PRIMARY KEY, user_id INT, question TEXT, '
                 'create_at DATETIME);')
@@ -154,6 +154,39 @@ class User(Database):
         self.cur.execute(f'UPDATE olivia SET energy = energy+1')
         self.conn.commit()
 
+    def get_all_users_for_today(self):
+        today = date.today()
+        today_str = today.strftime('%Y-%m-%d')
+        sql_query = f"SELECT * FROM history WHERE DATE(create_at) = '{today_str}'"
+        self.cur.execute(sql_query)
+        rows = self.cur.fetchall()
+        return len(rows)
+
+    def get_all_history(self):
+        return len(self.cur.execute(f'SELECT * FROM history').fetchall())
+
+    def change_last_attempt(self, tg_user: CallbackQuery or Message):
+        time = datetime.now()
+        self.cur.execute(f'UPDATE users SET last_attempt = ? WHERE user_id = ?', (time, tg_user.from_user.id))
+        self.conn.commit()
+
+    def add_thanks(self, message_id):
+        self.cur.execute(f'UPDATE history SET thanks = True WHERE message_id = ?', (message_id, ))
+        self.conn.commit()
+
+    def get_all_thanks(self):
+        list_thanks = self.cur.execute("SELECT thanks FROM history").fetchall()
+        values = [x[0] for x in list_thanks]
+        return values.count(True)
+
+    def get_active_users_for_today(self):
+        today = date.today()
+        today_str = today.strftime('%Y-%m-%d')
+        sql_query = f"SELECT * FROM users WHERE DATE(last_attempt) = '{today_str}'"
+        self.cur.execute(sql_query)
+        rows = self.cur.fetchall()
+        return len(rows)
+
 
 class Fortune(Database):
     def create_fortune(self, tg_user: Message or CallbackQuery,
@@ -171,8 +204,9 @@ class Fortune(Database):
                     text: str,
                     user_q: str,
                     message_id: int):
-        self.cur.execute(f'INSERT INTO history(user_id, card, text, create_at, user_q, reaction, message_id) VALUES(?,?,?,?,?,?,?)',
-                         (tg_user.from_user.id, card, text, datetime.now(), user_q, None, message_id))
+        self.cur.execute(f'INSERT INTO history(user_id, card, text, create_at, user_q, reaction, message_id, thanks)'
+                         f' VALUES(?,?,?,?,?,?,?,?)',
+                         (tg_user.from_user.id, card, text, datetime.now(), user_q, None, message_id, False))
         self.conn.commit()
 
     def get_history(self, tg_user: Message or CallbackQuery):
