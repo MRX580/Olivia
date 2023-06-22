@@ -6,9 +6,8 @@ import os
 
 load_dotenv(find_dotenv())
 CODE_MODE = os.getenv('CODE_MODE')
-if CODE_MODE == 'TEST':
-    memory = MemoryStorage()
-elif CODE_MODE == 'PROD':
+memory = MemoryStorage()
+if CODE_MODE == 'PROD':
     memory = RedisStorage2(host="127.0.0.1", port=6379)
 bot = Bot(token=os.getenv('TOKEN'))
 dp = Dispatcher(bot, storage=memory)

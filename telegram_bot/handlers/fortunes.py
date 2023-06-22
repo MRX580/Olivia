@@ -47,9 +47,8 @@ async def typing(message: types.Message):
 async def get_card(message: types.Message, state: FSMContext, extra_keyboard=False, mode=''):
     if not extra_keyboard:
         extra_keyboard = KbReply.FULL_TEXT(message)
-    await typing(message)
     await bot.send_animation(message.chat.id, 'https://media.giphy.com/media/3oKIPolAotPmdjjVK0/giphy.gif')
-    await asyncio.sleep(2)
+    await typing(message)
     temp_data = await state.get_data()
     rand_card = random.randint(0, 77)
     while rand_card in temp_data.get('rand_card') if temp_data.get('rand_card') else []:
@@ -74,6 +73,7 @@ async def get_card(message: types.Message, state: FSMContext, extra_keyboard=Fal
     im.save(buffer, format='JPEG', quality=75)
     await bot.send_photo(message.chat.id, buffer.getbuffer(), reply_markup=extra_keyboard)
     im.close()
+    interpretation_text = open(path_txt, 'r', encoding='utf-8').read()
     if mode == 'past':
         await bot.send_message(message.chat.id, lang[database.get_language(message)]['past'],
                                parse_mode='markdown')
@@ -85,18 +85,18 @@ async def get_card(message: types.Message, state: FSMContext, extra_keyboard=Fal
         await bot.send_message(message.chat.id,
                                lang[database.get_language(message)]['future'],
                                parse_mode='markdown')
-    msg = await bot.send_message(message.chat.id, open(path_txt, 'r', encoding='utf-8').read()[:380] + '...',
+    msg = await bot.send_message(message.chat.id, interpretation_text[:380] + '...',
                                  reply_markup=Kb.TEXT_FULL(message))
+    message_id = msg.message_id
     second_rand_card = None
     if isinstance(temp_data.get('rand_card'), list):
         second_rand_card = temp_data.get('rand_card')[1]
-    await state.update_data(text_data=open(path_txt, 'r', encoding='utf-8').read(),
-                            rand_card=[rand_card, second_rand_card])
     async with state.proxy() as data:
-        data[msg.message_id] = open(path_txt, 'r', encoding='utf-8').read()
-        database_fortune.add_history(message, card_name, open(path_txt, 'r', encoding='utf-8').read()[0:150],
-                                     data['question'])
-    await state.update_data(card=card_name, thx=False, full_text=False)
+        data[message_id] = open(path_txt, 'r', encoding='utf-8').read()
+        database_fortune.add_history(message, card_name, interpretation_text[:150],
+                                     data['question'], message_id)
+    await state.update_data(card=card_name, thx=False, full_text=False, rand_card=[rand_card, second_rand_card],
+                            text_data=interpretation_text, message_id=message_id)
     database_fortune.check_first_try(message)
     if random.randint(1, 10) in [1, 2, 3, 4, 5]:
         database_decks.update_reverse(lang_user, decks[card]['reversed'], card_name)

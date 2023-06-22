@@ -22,7 +22,6 @@ DIR_TXT = lambda lang: f'static/text/{lang}/day_card'
 DIR_TXT_GENERAL = 'static/text/general/day_card'
 
 
-
 async def switch_language(call: types.CallbackQuery):
     try:
         if call.data == 'switch english':
@@ -81,6 +80,7 @@ async def full_text_history(call: types.CallbackQuery, state: FSMContext):
             await call.message.edit_text(data, reply_markup=Kb.HISTORY_BACK(call.data))
         dp.register_callback_query_handler(back_text_history, text=call.data+'_back', state='*')
 
+
 async def back_text_history(call: types.CallbackQuery, state: FSMContext):
     async with state.proxy() as data:
         call_data = call.data[:-5]
@@ -90,7 +90,23 @@ async def back_text_history(call: types.CallbackQuery, state: FSMContext):
                                      reply_markup=Kb.HISTORY_FULL(call_data), parse_mode='HTML')
 
 
+async def add_reaction(call: types.CallbackQuery, state: FSMContext):
+    state_data = await state.get_data()
+    print(state_data)
+    message_id = state_data['message_id']
+    if call.data == 'like reaction':
+            logging.info(
+                f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Понравилась интерпретация | {datetime.now()}')
+            database_fortune.change_reaction('Like', message_id)
+    elif call.data == 'dislike reaction':
+        logging.info(
+            f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Не понравилась интерпретация | {datetime.now()}')
+        database_fortune.change_reaction('Dislike', message_id)
+
+
 def register_handlers_callback(dp: Dispatcher):
     dp.register_callback_query_handler(switch_language, text=['switch english', 'switch russian', 'switch english_command',
                                                               'switch russian_command'], state='*')
     dp.register_callback_query_handler(full_text, text=['full_text'], state=[Session.session, Session.session_3_cards])
+    dp.register_callback_query_handler(add_reaction, text=['like reaction', 'dislike reaction'],
+                                       state=[Session.session, Session.session_3_cards])

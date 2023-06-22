@@ -15,16 +15,22 @@ class Database:
     cur.execute('CREATE TABLE IF NOT EXISTS users (id INTEGER NOT NULL PRIMARY KEY, user_id INT, first_name TEXT, '
                 'name TEXT, energy INT, language TEXT, '
                 'attempts_used INT, last_attempt DATETIME, is_first_try BOOL, join_at datetime);')
+
     cur.execute('CREATE TABLE IF NOT EXISTS fortune (id INTEGER NOT NULL PRIMARY KEY, user_id INT, first_name TEXT, '
                 'card_type TEXT, answer TEXT, type_fortune TEXT, '
                 'create_at datetime);')
+
     cur.execute('CREATE TABLE IF NOT EXISTS wisdom (id INTEGER NOT NULL PRIMARY KEY, user_id INT, first_name TEXT, '
                 'message TEXT, create_at datetime);')
+
     cur.execute('CREATE TABLE IF NOT EXISTS history(user_id INT, card TEXT, '
-                'text TEXT, create_at DATETIME, user_q TEXT);')
+                'text TEXT, create_at DATETIME, user_q TEXT, reaction TEXT, message_id INT);')
+
     cur.execute('CREATE TABLE IF NOT EXISTS questions(id INTEGER NOT NULL PRIMARY KEY, user_id INT, question TEXT, '
                 'create_at DATETIME);')
+
     cur.execute('CREATE TABLE IF NOT EXISTS olivia(energy INT, max_energy INT);')
+
     cur.execute('CREATE TABLE IF NOT EXISTS decks(ru TEXT, en TEXT, reversed BOOL);')
 
     decks = cur.execute('SELECT * FROM decks').fetchone()
@@ -163,9 +169,10 @@ class Fortune(Database):
     def add_history(self, tg_user: Message or CallbackQuery,
                     card: str,
                     text: str,
-                    user_q: str):
-        self.cur.execute(f'INSERT INTO history(user_id, card, text, create_at, user_q) VALUES(?,?,?,?,?)',
-                         (tg_user.from_user.id, card, text, datetime.now(), user_q))
+                    user_q: str,
+                    message_id: int):
+        self.cur.execute(f'INSERT INTO history(user_id, card, text, create_at, user_q, reaction, message_id) VALUES(?,?,?,?,?,?,?)',
+                         (tg_user.from_user.id, card, text, datetime.now(), user_q, None, message_id))
         self.conn.commit()
 
     def get_history(self, tg_user: Message or CallbackQuery):
@@ -182,6 +189,10 @@ class Fortune(Database):
 
     def is_first_try(self, tg_user: Message or CallbackQuery):
         return self.cur.execute(f'SELECT is_first_try FROM users WHERE user_id = {tg_user.from_user.id}').fetchone()[0]
+
+    def change_reaction(self, reaction, message_id):
+        self.cur.execute(f'UPDATE history SET reaction = "{reaction}" WHERE message_id = {message_id}')
+        self.conn.commit()
 
 
 class Wisdom(Database):
