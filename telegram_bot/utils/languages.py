@@ -90,6 +90,8 @@ I’m here to let my community know when something is going wrong and then direc
         'typing': 'Typing.',
         'like': 'Like',
         'dislike': 'Dislike',
+        'aks_chatgpt': ['Ask chatgpt'],
+        'aks_chatgpt_choice': choice(['Ask chatgpt']),
     },
 
 
@@ -177,6 +179,8 @@ I’m here to let my community know when something is going wrong and then direc
         'typing': 'Печатает.',
         'like': 'Нравиться',
         'dislike': 'Не нравиться',
+        'aks_chatgpt': ['Спросить у чатжпт'],
+        'aks_chatgpt_choice': choice(['Спросить у чатжпт']),
     }
 }
 
@@ -192,6 +196,7 @@ all_lang = {
     'open_present': lang['en']['open_present'] + lang['ru']['open_present'],
     'open_past': lang['en']['open_past'] + lang['ru']['open_past'],
     'open_future': lang['en']['open_future'] + lang['ru']['open_future'],
+    'get_chatgpt': lang['en']['aks_chatgpt'] + lang['ru']['aks_chatgpt'],
     'open_3_cards': [lang['en']['open_past'], lang['ru']['open_past'], lang['en']['open_present'],
                      lang['ru']['open_present'], lang['en']['open_future'], lang['ru']['open_future']],
 }

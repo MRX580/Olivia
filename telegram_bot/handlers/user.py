@@ -9,7 +9,8 @@ from datetime import datetime, timedelta
 from amplitude import Amplitude, BaseEvent
 
 from create_bot import bot, dp, CODE_MODE
-from keyboards.main_keyboards import Kb, KbReply
+from keyboards.inline_keyboard import Kb
+from keyboards.reply_keyboard import KbReply
 from utils.database import User, Fortune, Wisdom
 from utils.languages import lang, all_lang
 from callbacks.user import full_text_history

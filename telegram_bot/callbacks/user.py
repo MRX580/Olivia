@@ -7,7 +7,7 @@ from aiogram import types, Dispatcher
 from aiogram.dispatcher import FSMContext
 
 from create_bot import dp
-from keyboards.main_keyboards import Kb
+from keyboards.inline_keyboard import Kb
 from utils.database import User, Fortune, Decks
 from utils.languages import lang
 from states.main import Session

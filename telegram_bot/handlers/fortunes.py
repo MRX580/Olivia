@@ -4,6 +4,7 @@ import random
 import os
 import io
 import json
+import openai
 
 from PIL import Image
 from aiogram import types, Dispatcher
@@ -12,7 +13,8 @@ from aiogram.dispatcher import FSMContext
 from datetime import datetime
 
 from create_bot import bot, CODE_MODE
-from keyboards.main_keyboards import Kb, KbReply
+from keyboards.inline_keyboard import Kb
+from keyboards.reply_keyboard import KbReply
 from utils.database import User, Fortune, Decks
 from utils.languages import lang, all_lang
 from utils.decks import decks
@@ -30,60 +32,75 @@ DIR_TXT = lambda lang: f'static/text/{lang}/day_card'
 DIR_REVERSE = lambda lang: f'static/text/{lang}/reverse'
 
 
-async def typing(message: types.Message):
-    msg = await bot.send_message(message.chat.id, lang[database.get_language(message)]['typing'])
-    for i in range(2):
-        if i != 0:
-            await bot.edit_message_text(message_id=msg['message_id'], text=msg['text']
-                                        , chat_id=message.chat.id)
-        await asyncio.sleep(0.5)
-        for j in range(1, 3):
-            await bot.edit_message_text(message_id=msg['message_id'], text=msg['text'] + '.' * j,
-                                        chat_id=message.chat.id)
-            await asyncio.sleep(0.5)
-    await msg.delete()
+async def typing(message: types.Message, mode='typing'):
+    await bot.send_chat_action(message.chat.id, mode)
+
+
+async def chat_gpt_text_generation(question: str, name_card: str, lang_user: str, is_reversed: bool = False) -> str:
+    result = ""
+    if lang_user == 'ru':
+        result = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo-0301",
+            messages=[
+                {"role": "system", "content": "Представь что ты гадалка"},
+                {'role': 'system', 'content': f'''Ты - гадалка. К тебе пришел клиент с вопросом: {question} 
+                Выпала карта {"перевернутое" if is_reversed else ""} {name_card}. Сформулируй интерпретацию к карте, 
+                которая содержит ответ на этот вопрос. Тон интерпретации - дружелюбный и наставнический. Не более 222 
+                слов. Упомяни: - общее значение карты, свое отношение к ней, наиболее вероятный ответ на вопрос клиента, 
+                небольшую рекомендацию. Разбей текст на два абзаца. Используй слова “я думаю”, “я ощущаю” или похожие. 
+                Начни с собственной реакции на выпавшую карту, например “О, это {name_card}! 
+                {"И оно перевернуто" if is_reversed else ""}”'''},]
+        )
+    elif lang_user == 'en':
+        result = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo-0301",
+            messages=[
+                {"role": "system", "content": "Imagine you are a fortune teller"},
+                {'role': 'system', 'content': f'''
+                You are a fortune teller. A client has come to you with a question: {question}.
+                The {name_card} card has been drawn {"reversed" if is_reversed else "upright"}. Allow me to interpret the card, 
+                providing an answer to the question in a friendly and mentoring tone. In no more than 222 words, I will discuss the 
+                general meaning of the card, my personal perspective on it, the most probable answer to the client's question, 
+                and offer a small recommendation. Let's divide the text into two paragraphs. Feel free to include phrases such as "I 
+                think," "I sense," or similar expressions. Let's begin with my initial reaction to the drawn card, for example, "Oh, 
+                it's {name_card}! {"And it's reversed" if is_reversed else ""}."'''}, ]
+        )
+    return result['choices'][0]['message']['content']
+
 
 
 async def get_card(message: types.Message, state: FSMContext, extra_keyboard=False, mode=''):
     if not extra_keyboard:
         extra_keyboard = KbReply.FULL_TEXT(message)
-    await bot.send_animation(message.chat.id, 'https://media.giphy.com/media/3oKIPolAotPmdjjVK0/giphy.gif')
-    await typing(message)
     temp_data = await state.get_data()
     rand_card = random.randint(0, 77)
     while rand_card in temp_data.get('rand_card') if temp_data.get('rand_card') else []:
         rand_card = random.randint(0, 77)
     lang_user = database.get_language(message)
     card = os.listdir(DIR_IMG)[rand_card][:-4]
-    logging.info(
-        f'[{message.from_user.id} | {message.from_user.first_name}] | card: {card} | lang_user: {lang_user} | {datetime.now()}')
     card_name = decks[card][lang_user]
     path_img = os.path.join(DIR_IMG, f'{card}.jpg')
     path_txt = os.path.join(DIR_TXT(lang_user), f'{card_name}.txt')
     is_reverse = database_decks.get_reversed(lang_user, card_name)
     logging.info(
-        f'[{message.from_user.id} | {message.from_user.first_name}] card: {card_name} | reverse: {bool(is_reverse)}\n'
-        f'path_txt - {path_txt}\npath_img - {path_img} | {datetime.now()}')
+        f'[{message.from_user.id} | {message.from_user.first_name}] card: {card_name} | reverse: {bool(is_reverse)} |'
+        f' lang_user: {lang_user} | card: {card}\npath_txt - {path_txt}\npath_img - {path_img} | {datetime.now()}')
     im = Image.open(open(path_img, 'rb'))
     buffer = io.BytesIO()
     if is_reverse:
         path_txt = os.path.join(DIR_REVERSE(lang_user), f'{card_name}.txt')
         im = im.rotate(180)
-        im.save(buffer, format='JPEG', quality=75)
     im.save(buffer, format='JPEG', quality=75)
+    await bot.send_animation(message.chat.id, 'https://media.giphy.com/media/3oKIPolAotPmdjjVK0/giphy.gif')
+    await typing(message, mode="upload_photo")
     await bot.send_photo(message.chat.id, buffer.getbuffer(), reply_markup=extra_keyboard)
     im.close()
-    interpretation_text = open(path_txt, 'r', encoding='utf-8').read()
-    if mode == 'past':
-        await bot.send_message(message.chat.id, lang[database.get_language(message)]['past'],
-                               parse_mode='markdown')
-    elif mode == 'present':
-        await bot.send_message(message.chat.id,
-                               lang[database.get_language(message)]['present'],
-                               parse_mode='markdown')
-    elif mode == 'future':
-        await bot.send_message(message.chat.id,
-                               lang[database.get_language(message)]['future'],
+    await typing(message)
+    interpretation_text = await open(path_txt, 'r', encoding='utf-8').read() if mode != 'chatgpt' else\
+        await chat_gpt_text_generation(question=temp_data['question'], name_card=card_name, lang_user=lang_user,
+                                       is_reversed=is_reverse)
+    if mode in ['past', 'present', 'future']:
+        await bot.send_message(message.chat.id, lang[database.get_language(message)][mode],
                                parse_mode='markdown')
     msg = await bot.send_message(message.chat.id, interpretation_text[:380] + '...',
                                  reply_markup=Kb.TEXT_FULL(message))
@@ -128,20 +145,32 @@ async def get_fortune_one_cards(message: types.Message, state: FSMContext):
     await close_session(message, state)
 
 
+async def get_fortune_chatgpt(message: types.Message, state: FSMContext):
+    # if CODE_MODE == 'PROD':
+    #     amplitude.track(BaseEvent(event_type='OneCard', user_id=f'{message.from_user.id}'))
+    logging.info(
+        f'[{message.from_user.id} | {message.from_user.first_name}] Callback: chatgpt | {datetime.now()}')
+    await get_card(message, state, mode='chatgpt')
+    database.minus_energy()
+    await Session.session.set()
+    await state.update_data(close_session=json.dumps(datetime.now(), default=str))
+    await asyncio.sleep(3600)
+    await close_session(message, state)
+
+
 async def get_fortune(message: types.Message, state: FSMContext):
     if database.get_olivia_energy() > 0:
-        if message.text in all_lang['get_card_again'] + all_lang['divination']:
-            if message.text in all_lang['get_card_again']:
-                await bot.send_message(message.chat.id, lang[database.get_language(message)]['question_again'](message),
-                                       reply_markup=types.ReplyKeyboardRemove())
-            else:
-                await bot.send_message(message.chat.id, lang[database.get_language(message)]['question_start'](message),
-                                       reply_markup=types.ReplyKeyboardRemove())
-            await Register.input_question.set()
-            await state.update_data(check='False')
-            await asyncio.sleep(45)
-            await check_time(message, state)
-            return
+        if message.text in all_lang['get_card_again']:
+            await bot.send_message(message.chat.id, lang[database.get_language(message)]['question_again'](message),
+                                   reply_markup=types.ReplyKeyboardRemove())
+        else:
+            await bot.send_message(message.chat.id, lang[database.get_language(message)]['question_start'](message),
+                                   reply_markup=types.ReplyKeyboardRemove())
+        await Register.input_question.set()
+        await state.update_data(check='False')
+        await asyncio.sleep(45)
+        await check_time(message, state)
+        return
     else:
         await bot.send_message(message.chat.id, lang[database.get_language(message)]['no_energy'])
         return
@@ -173,4 +202,5 @@ def register_handlers_client(dp: Dispatcher):
                                 state=Session.session)
     dp.register_message_handler(get_fortune_one_cards, Text(equals=all_lang['get_card']), state=Session.get_card)
     dp.register_message_handler(get_fortune_three_cards, Text(equals=all_lang['get_3_cards']), state=Session.get_card)
+    dp.register_message_handler(get_fortune_chatgpt, Text(equals=all_lang['get_chatgpt']), state=Session.get_card)
     dp.register_message_handler(session_3_cards, Text(equals=all_lang['open_3_cards']), state=Session.session_3_cards)
