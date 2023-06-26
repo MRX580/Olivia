@@ -34,6 +34,7 @@ amplitude.configuration.callback = callback_fun
 
 
 def convert_str_in_datetime(time_str: str) -> datetime:
+    time_str = time_str.replace('"', '')
     time = list(map(int, time_str[:-7].split(' ')[0].split('-'))) + list(
         map(int, time_str[:-7].split(' ')[1].split(':')))
     time_result = datetime(month=time[1], year=time[0], day=time[2], hour=time[3], minute=time[4], second=time[5])
@@ -71,6 +72,7 @@ async def close_session(message: types.Message, state: FSMContext):
     data = await state.get_data()
     try:
         time = convert_str_in_datetime(data['close_session'])
+        print(time)
         if data['thx']:
             if time + timedelta(hours=1) < datetime.now():
                 logging.info(
@@ -226,17 +228,20 @@ async def listen_wisdom(message: types.Message, state: FSMContext):
     await bot.send_message(message.chat.id, lang[database.get_language(message)]['answer_feedback'](message))
     data = await state.get_data()  # Сделать проверку на сессию
     await state.finish()
-    if data['last_state'] == 'Session:session':
-        await Session.session.set()
-        await state.update_data(thx=data['thx'], full_text=data['full_text'])
-        return
-    elif data['last_state'] == 'Session:session_3_cards':
-        await Session.session_3_cards.set()
-        if data['past'] and data['present'] and data['future']:
+    try:
+        if data['last_state'] == 'Session:session':
             await Session.session.set()
-        await state.update_data(thx=data['thx'], full_text=data['full_text'])
-        await state.update_data(past=data['past'], present=data['present'], future=data['future'])
-        return
+            await state.update_data(thx=data['thx'], full_text=data['full_text'])
+            return
+        elif data['last_state'] == 'Session:session_3_cards':
+            await Session.session_3_cards.set()
+            if data['past'] and data['present'] and data['future']:
+                await Session.session.set()
+            await state.update_data(thx=data['thx'], full_text=data['full_text'])
+            await state.update_data(past=data['past'], present=data['present'], future=data['future'])
+            return
+    except KeyError:
+        pass
     await WisdomState.next()
 
 

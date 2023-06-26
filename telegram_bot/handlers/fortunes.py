@@ -11,6 +11,7 @@ from aiogram import types, Dispatcher
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher import FSMContext
 from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor
 
 from create_bot import bot, CODE_MODE
 from keyboards.inline_keyboard import Kb
@@ -36,7 +37,8 @@ async def typing(message: types.Message, mode='typing'):
     await bot.send_chat_action(message.chat.id, mode)
 
 
-async def chat_gpt_text_generation(question: str, name_card: str, lang_user: str, is_reversed: bool = False) -> str:
+
+def chat_gpt_text_generation(question: str, name_card: str, lang_user: str, is_reversed: bool = False) -> str:
     result = ""
     if lang_user == 'ru':
         result = openai.ChatCompletion.create(
@@ -92,13 +94,18 @@ async def get_card(message: types.Message, state: FSMContext, extra_keyboard=Fal
         im = im.rotate(180)
     im.save(buffer, format='JPEG', quality=75)
     await bot.send_animation(message.chat.id, 'https://media.giphy.com/media/3oKIPolAotPmdjjVK0/giphy.gif')
-    await typing(message, mode="upload_photo")
     await bot.send_photo(message.chat.id, buffer.getbuffer(), reply_markup=extra_keyboard)
     im.close()
-    await typing(message)
-    interpretation_text = await open(path_txt, 'r', encoding='utf-8').read() if mode != 'chatgpt' else\
-        await chat_gpt_text_generation(question=temp_data['question'], name_card=card_name, lang_user=lang_user,
-                                       is_reversed=is_reverse)
+    interpretation_text = open(path_txt, 'r', encoding='utf-8').read()
+    if mode == 'chatgpt':
+        loop = asyncio.get_event_loop()
+        executor = ThreadPoolExecutor()
+        task2 = loop.run_in_executor(executor, chat_gpt_text_generation, temp_data['question'], card_name, lang_user,
+                                       is_reverse)
+        while not task2.done():
+            await typing(message)
+            await asyncio.sleep(2)
+        interpretation_text = await task2
     if mode in ['past', 'present', 'future']:
         await bot.send_message(message.chat.id, lang[database.get_language(message)][mode],
                                parse_mode='markdown')
