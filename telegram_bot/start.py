@@ -23,12 +23,12 @@ async def send_kpi():
             for id in user_ids:
                 await bot.send_message(id,
                                        f"""
-        Активных пользователей сегодня: {all_active_users}
-        Количество открытых карт сегодня: {today_opened}
-        
-        Всего пользователей в базе: {all_users}
-        Всего открытых карт: {all_history}
-        Количество “Спасибо”: {all_thanks}
+Активных пользователей сегодня: {all_active_users}
+Количество открытых карт сегодня: {today_opened}
+
+Всего пользователей в базе: {all_users}
+Всего открытых карт: {all_history}
+Количество “Спасибо”: {all_thanks}
                                                """)
             await asyncio.sleep(60)
         else:
