@@ -152,17 +152,17 @@ async def get_fortune_one_cards(message: types.Message, state: FSMContext):
     await close_session(message, state)
 
 
-async def get_fortune_chatgpt(message: types.Message, state: FSMContext):
-    # if CODE_MODE == 'PROD':
-    #     amplitude.track(BaseEvent(event_type='OneCard', user_id=f'{message.from_user.id}'))
-    logging.info(
-        f'[{message.from_user.id} | {message.from_user.first_name}] Callback: chatgpt | {datetime.now()}')
-    await get_card(message, state, mode='chatgpt')
-    database.minus_energy()
-    await Session.session.set()
-    await state.update_data(close_session=json.dumps(datetime.now(), default=str))
-    await asyncio.sleep(3600)
-    await close_session(message, state)
+# async def get_fortune_chatgpt(message: types.Message, state: FSMContext):
+#     # if CODE_MODE == 'PROD':
+#     #     amplitude.track(BaseEvent(event_type='OneCard', user_id=f'{message.from_user.id}'))
+#     logging.info(
+#         f'[{message.from_user.id} | {message.from_user.first_name}] Callback: chatgpt | {datetime.now()}')
+#     await get_card(message, state, mode='chatgpt')
+#     database.minus_energy()
+#     await Session.session.set()
+#     await state.update_data(close_session=json.dumps(datetime.now(), default=str))
+#     await asyncio.sleep(3600)
+#     await close_session(message, state)
 
 
 async def get_fortune(message: types.Message, state: FSMContext):
@@ -209,5 +209,5 @@ def register_handlers_client(dp: Dispatcher):
                                 state=Session.session)
     dp.register_message_handler(get_fortune_one_cards, Text(equals=all_lang['get_card']), state=Session.get_card)
     dp.register_message_handler(get_fortune_three_cards, Text(equals=all_lang['get_3_cards']), state=Session.get_card)
-    dp.register_message_handler(get_fortune_chatgpt, Text(equals=all_lang['get_chatgpt']), state=Session.get_card)
+    # dp.register_message_handler(get_fortune_chatgpt, Text(equals=all_lang['get_chatgpt']), state=Session.get_card)
     dp.register_message_handler(session_3_cards, Text(equals=all_lang['open_3_cards']), state=Session.session_3_cards)
