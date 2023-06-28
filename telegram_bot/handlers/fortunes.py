@@ -70,7 +70,6 @@ def chat_gpt_text_generation(question: str, name_card: str, lang_user: str, is_r
     return result['choices'][0]['message']['content']
 
 
-
 async def get_card(message: types.Message, state: FSMContext, extra_keyboard=False, mode=''):
     if not extra_keyboard:
         extra_keyboard = KbReply.FULL_TEXT(message)

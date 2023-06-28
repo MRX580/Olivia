@@ -14,7 +14,8 @@ class Database:
     cur = conn.cursor()
     cur.execute('CREATE TABLE IF NOT EXISTS users (id INTEGER NOT NULL PRIMARY KEY, user_id INT, first_name TEXT, '
                 'name TEXT, energy INT, language TEXT, '
-                'attempts_used INT, last_attempt DATETIME, is_first_try BOOL, join_at datetime);')
+                'attempts_used INT, last_attempt DATETIME, is_first_try BOOL, join_at datetime, phone_number TEXT, '
+                'username TEXT);')
 
     cur.execute('CREATE TABLE IF NOT EXISTS fortune (id INTEGER NOT NULL PRIMARY KEY, user_id INT, first_name TEXT, '
                 'card_type TEXT, answer TEXT, type_fortune TEXT, '
@@ -102,12 +103,14 @@ class User(Database):
         self.conn.commit()
 
     def create_user(self, tg_user: Message):
+        contact = tg_user.contact
         tg_user = tg_user.from_user
         time = datetime.now()
         self.cur.execute('INSERT INTO users(user_id, first_name, name, energy, language, attempts_used, last_attempt, '
-                         'is_first_try, join_at) '
-                         'VALUES(?,?,?,?,?,?,?,?,?)',
-                         (tg_user.id, tg_user.first_name, '', 100, 'ru', 0, time, False, time))
+                         'is_first_try, join_at, phone_number, username) '
+                         'VALUES(?,?,?,?,?,?,?,?,?,?,?)',
+                         (tg_user.id, tg_user.first_name, '', 100, 'ru', 0, time, False, time,
+                          contact.phone_number if contact is not None else None, tg_user.username))
         self.cur.execute(f'UPDATE olivia SET max_energy = {self.get_all_users() * 3}')
         self.conn.commit()
 
