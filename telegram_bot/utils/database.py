@@ -25,7 +25,8 @@ class Database:
                 'message TEXT, create_at datetime);')
 
     cur.execute('CREATE TABLE IF NOT EXISTS history(user_id INT, card TEXT, '
-                'text TEXT, create_at DATETIME, user_q TEXT, reaction TEXT, message_id INT, thanks BOOL);')
+                'text TEXT, create_at DATETIME, user_q TEXT, reaction TEXT, message_id INT, thanks BOOL, full_text '
+                'TEXT);')
 
     cur.execute('CREATE TABLE IF NOT EXISTS questions(id INTEGER NOT NULL PRIMARY KEY, user_id INT, question TEXT, '
                 'create_at DATETIME);')
@@ -206,11 +207,16 @@ class Fortune(Database):
                     card: str,
                     text: str,
                     user_q: str,
-                    message_id: int):
-        self.cur.execute(f'INSERT INTO history(user_id, card, text, create_at, user_q, reaction, message_id, thanks)'
-                         f' VALUES(?,?,?,?,?,?,?,?)',
-                         (tg_user.from_user.id, card, text, datetime.now(), user_q, None, message_id, False))
+                    message_id: int,
+                    full_text: str):
+        self.cur.execute(f'INSERT INTO history(user_id, card, text, create_at, user_q, reaction, message_id, thanks, '
+                         f'full_text)'
+                         f' VALUES(?,?,?,?,?,?,?,?,?)',
+                         (tg_user.from_user.id, card, text, datetime.now(), user_q, None, message_id, False, full_text))
         self.conn.commit()
+
+    def get_full_text_on_message_id(self, message_id: int):
+        return self.cur.execute(f'SELECT full_text FROM history WHERE message_id = {message_id}').fetchone()
 
     def get_history(self, tg_user: Message or CallbackQuery):
         return self.cur.execute(f'SELECT * FROM history WHERE user_id = {tg_user.from_user.id}').fetchall()[::-1]

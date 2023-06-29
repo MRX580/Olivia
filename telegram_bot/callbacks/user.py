@@ -71,13 +71,18 @@ async def full_text(call: types.CallbackQuery, state: FSMContext):
 
 async def full_text_history(call: types.CallbackQuery, state: FSMContext):
     async with state.proxy() as data:
-        data = open(f'{DIR_TXT_GENERAL}/{data[f"{call.data}"]["card_name"]}.txt', 'r').read()
-        if len(data) > 4096:
-            for x in range(0, len(data), 4096):
-                await call.message.edit_text(data[x:x + 4096], reply_markup=Kb.HISTORY_BACK(call.data))
-                break
+        full_text_message = data[call.data]['full_text']
+        if full_text_message:
+            if len(full_text_message) > 4096:
+                for x in range(0, len(full_text_message), 4096):
+                    await call.message.edit_text(full_text_message[x:x + 4096], reply_markup=Kb.HISTORY_BACK(call.data))
+                    break
+            else:
+                if not full_text_message:
+                    await call.message.edit_text('Не удалось загрузить интерпретацию', reply_markup=Kb.HISTORY_BACK(call.data))
+                await call.message.edit_text(full_text_message, reply_markup=Kb.HISTORY_BACK(call.data))
         else:
-            await call.message.edit_text(data, reply_markup=Kb.HISTORY_BACK(call.data))
+            await call.message.edit_text('Не удалось загрузить интерпретацию', reply_markup=Kb.HISTORY_BACK(call.data))
         dp.register_callback_query_handler(back_text_history, text=call.data+'_back', state='*')
 
 
@@ -85,7 +90,7 @@ async def back_text_history(call: types.CallbackQuery, state: FSMContext):
     async with state.proxy() as data:
         call_data = call.data[:-5]
         data_m = data[f"{call_data}"]
-        text = open(f'{DIR_TXT_GENERAL}/{data_m["card_name"]}.txt','r').read()[:150]
+        text = data_m['short_text']
         await call.message.edit_text(f'{data_m["time"]}\n{data_m["user_q"]}\n\n<b>{data_m["card_name"]}</b>\n<i>{text}</i>',
                                      reply_markup=Kb.HISTORY_FULL(call_data), parse_mode='HTML')
 

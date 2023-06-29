@@ -118,7 +118,7 @@ async def get_card(message: types.Message, state: FSMContext, extra_keyboard=Fal
     async with state.proxy() as data:
         data[message_id] = open(path_txt, 'r', encoding='utf-8').read()
         database_fortune.add_history(message, card_name, interpretation_text[:150],
-                                     data['question'], message_id)
+                                     data['question'], message_id, interpretation_text)
     await state.update_data(card=card_name, thx=False, full_text=False, rand_card=[rand_card, second_rand_card],
                             text_data=interpretation_text, message_id=message_id)
     database_fortune.check_first_try(message)

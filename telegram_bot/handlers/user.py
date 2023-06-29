@@ -199,7 +199,7 @@ async def history(message: types.Message, state: FSMContext):
                 time_result, i[4], i[1], i[2].replace('\t', '')), parse_mode='HTML')
                 await bot.edit_message_reply_markup(message_id=msg['message_id'], chat_id=message.chat.id,
                                                     reply_markup=Kb.HISTORY_FULL(msg["message_id"]))
-                data[f'{msg["message_id"]}'] = {'time': time_result, 'card_name': i[1], 'full_text': i[2],
+                data[f'{msg["message_id"]}'] = {'time': time_result, 'card_name': i[1], 'full_text': i[8], 'short_text': i[2],
                                                 'user_q': i[4]}
                 msg_d.append(msg["message_id"])
             dp.register_callback_query_handler(full_text_history, text=msg_d, state='*')
