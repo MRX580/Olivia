@@ -64,27 +64,6 @@ class Database:
             amplitude.track(BaseEvent(event_type='PingUsers', user_id='currently_users',
                                       event_properties={'currently_users': value_users}))
 
-    def add_new_table(self, table: str, remove_column: list, add_column: list):
-        columns = []
-        if remove_column:
-            for column in self.cur.execute(f'PRAGMA table_info({table})').fetchall():
-                if not column[1] in remove_column:
-                    columns.append(column[1])
-            name_columns = ', '.join(columns)
-            self.cur.execute(f'CREATE TABLE copied AS SELECT {name_columns} FROM {table} WHERE 0')
-            for column in self.cur.execute(f'SELECT {name_columns} FROM users').fetchall():
-                text = '?,' * len(column)
-                self.cur.execute(f'INSERT INTO copied({name_columns}) VALUES({text[:-1]})', column)
-            self.cur.execute(f'DROP TABLE {table}')
-            self.cur.execute(f'ALTER TABLE copied RENAME TO users')
-        try:
-            if add_column:
-                for i in add_column:
-                    self.cur.execute(f'ALTER TABLE {table} ADD COLUMN {i}')
-        except sqlite3.OperationalError:
-            print('Имя столбца сущевствует')
-        self.conn.commit()
-
     def convert_time(self, time: str):
         data = time[:-7].replace('-', ':').replace(' ', ':').split(':')
         return datetime(int(data[0]), int(data[1]), int(data[2]), int(data[3]), int(data[4]), int(data[5]))
@@ -146,6 +125,28 @@ class User(Database):
 
     def get_language(self, tg_user: CallbackQuery or Message):
         return self.cur.execute(f'SELECT language FROM users WHERE user_id = {tg_user.from_user.id}').fetchone()[0]
+
+    def get_opened_cards(self, tg_user: CallbackQuery or Message):
+        self.cur.execute("SELECT COUNT(*) FROM history WHERE user_id = ?", (tg_user.from_user.id,))
+        result = self.cur.fetchone()[0]
+        return result
+
+    def get_days_with_olivia(self, tg_user: CallbackQuery or Message):
+        query = self.cur.execute(f'SELECT join_at FROM users WHERE user_id = {tg_user.from_user.id}')
+        join_at_date = query.fetchone()[0]
+        last_registration = datetime.strptime(join_at_date, "%Y-%m-%d %H:%M:%S.%f")
+
+        current_date = datetime.now()
+
+        time_difference = current_date - last_registration
+
+        days = time_difference.days
+
+        months = days // 30
+        remaining_days = days % 30
+
+        result = f"{months} месяцев, {remaining_days} дней"
+        return result
 
     def get_name(self, tg_user: CallbackQuery or Message):
         return self.cur.execute(f'SELECT name FROM users WHERE user_id = {tg_user.from_user.id}').fetchone()[0]

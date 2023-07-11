@@ -37,36 +37,45 @@ async def typing(message: types.Message, mode='typing'):
     await bot.send_chat_action(message.chat.id, mode)
 
 
-
 def chat_gpt_text_generation(question: str, name_card: str, lang_user: str, is_reversed: bool = False) -> str:
     result = ""
     if lang_user == 'ru':
         result = openai.ChatCompletion.create(
             model="gpt-3.5-turbo-0301",
+            temperature=0.8,
             messages=[
-                {"role": "system", "content": "Представь что ты гадалка"},
-                {'role': 'system', 'content': f'''Ты - гадалка. К тебе пришел клиент с вопросом: {question} 
-                Выпала карта {"перевернутое" if is_reversed else ""} {name_card}. Сформулируй интерпретацию к карте, 
-                которая содержит ответ на этот вопрос. Тон интерпретации - дружелюбный и наставнический. Не более 222 
-                слов. Упомяни: - общее значение карты, свое отношение к ней, наиболее вероятный ответ на вопрос клиента, 
-                небольшую рекомендацию. Разбей текст на два абзаца. Используй слова “я думаю”, “я ощущаю” или похожие. 
-                Начни с собственной реакции на выпавшую карту, например “О, это {name_card}! 
-                {"И оно перевернуто" if is_reversed else ""}”'''},]
-        )
+                {'role': 'assistant', 'content':
+                    f''' На вопрос:{question} Выпала карта {name_card} {"И оно перевернуто" if is_reversed else ""}. 
+
+В этой и дальнейших интерпретациях обращай внимание на связи с предыдущими картами. Поддерживай персонализированный подход, например можешь использовать фразы похожие на:
+
+От этой карты у меня ощущения
+Кажется, в вашей ситуации…
+Вот что я ощущаю по поводу этого вопроса
+Что эта карта сообщает, так это..
+В случаях, когда мы имеем дело с перевернутой картой, я бы смотрела на ситуацию так:
+Среди множества значений этой карты, для твоего вопроса я бы выделила..
+
+и пусть в тексте будет 2-3 коротких абзаца(20 слов) 
+'''},])
     elif lang_user == 'en':
         result = openai.ChatCompletion.create(
             model="gpt-3.5-turbo-0301",
             messages=[
-                {"role": "system", "content": "Imagine you are a fortune teller"},
-                {'role': 'system', 'content': f'''
-                You are a fortune teller. A client has come to you with a question: {question}.
-                The {name_card} card has been drawn {"reversed" if is_reversed else "upright"}. Allow me to interpret the card, 
-                providing an answer to the question in a friendly and mentoring tone. In no more than 222 words, I will discuss the 
-                general meaning of the card, my personal perspective on it, the most probable answer to the client's question, 
-                and offer a small recommendation. Let's divide the text into two paragraphs. Feel free to include phrases such as "I 
-                think," "I sense," or similar expressions. Let's begin with my initial reaction to the drawn card, for example, "Oh, 
-                it's {name_card}! {"And it's reversed" if is_reversed else ""}."'''}, ]
+                {'role': 'system', 'content':
+                    f'''
+You are Olivia, a spiritual advisor, psychoanalyst and psychotherapist. You have a deep understanding of the metaphorical card system, the Tarot, numerology and astrology. You are known for your creative approach to existential therapy and professionally interpret signs and symbols to help people better understand their emotions and reconnect with their inner self.
+
+You are now sitting across someone who has come to you seeking guidance.
+The first Tarot card comes after the question {question} is the {name_card} {"And it's reversed" if is_reversed else ""}.
+
+React emotionally to the card or mention your associations.
+Provide a personal and engaging interpretation of the card the Higher Priestess, using your own voice and experiences to make it feel authentic and heartfelt. Make sure vocabulary is diverse and write like you talk to a person. 
+Be friendly and straight to the point, if possible - suggest the very practical first step.
+Less than 60 words, 2 or 3 paragraphs.
+                ."'''}, ]
         )
+    print(result)
     return result['choices'][0]['message']['content']
 
 
@@ -93,7 +102,6 @@ async def get_card(message: types.Message, state: FSMContext, extra_keyboard=Fal
         im = im.rotate(180)
     im.save(buffer, format='JPEG', quality=75)
     await bot.send_animation(message.chat.id, 'https://media.giphy.com/media/3oKIPolAotPmdjjVK0/giphy.gif')
-    await bot.send_photo(message.chat.id, buffer.getbuffer(), reply_markup=extra_keyboard)
     im.close()
     interpretation_text = open(path_txt, 'r', encoding='utf-8').read()
     if mode == 'chatgpt':
@@ -108,8 +116,9 @@ async def get_card(message: types.Message, state: FSMContext, extra_keyboard=Fal
     if mode in ['past', 'present', 'future']:
         await bot.send_message(message.chat.id, lang[database.get_language(message)][mode],
                                parse_mode='markdown')
-    msg = await bot.send_message(message.chat.id, interpretation_text[:380] + '...',
-                                 reply_markup=Kb.TEXT_FULL(message))
+    print(interpretation_text)
+    msg = await bot.send_photo(message.chat.id, buffer.getbuffer(), caption=interpretation_text[:1023],
+                               reply_markup=extra_keyboard)
     database.change_last_attempt(message)
     message_id = msg.message_id
     second_rand_card = None

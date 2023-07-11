@@ -12,4 +12,3 @@ if CODE_MODE == 'PROD':
 bot = Bot(token=os.getenv('TOKEN'))
 dp = Dispatcher(bot, storage=memory)
 openai.api_key = os.getenv('OPENAI_TOKEN')
-print("ONLINE")

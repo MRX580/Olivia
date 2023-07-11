@@ -97,7 +97,6 @@ async def back_text_history(call: types.CallbackQuery, state: FSMContext):
 
 async def add_reaction(call: types.CallbackQuery, state: FSMContext):
     state_data = await state.get_data()
-    print(state_data)
     message_id = state_data['message_id']
     if call.data == 'like reaction':
             logging.info(

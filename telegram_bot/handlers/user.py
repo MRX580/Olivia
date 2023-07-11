@@ -72,7 +72,6 @@ async def close_session(message: types.Message, state: FSMContext):
     data = await state.get_data()
     try:
         time = convert_str_in_datetime(data['close_session'])
-        print(time)
         if data['thx']:
             if time + timedelta(hours=1) < datetime.now():
                 logging.info(

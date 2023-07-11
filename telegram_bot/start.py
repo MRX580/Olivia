@@ -51,4 +51,5 @@ if __name__ == "__main__":
     admin.register_handlers_client(dp)
     register_handlers_callback(dp)
     if not Migration.is_perform_migrations():
+        print("ONLINE")
         executor.start_polling(dp, skip_updates=True, on_startup=plus_energy)
