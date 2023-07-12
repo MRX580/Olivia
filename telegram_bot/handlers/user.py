@@ -172,8 +172,7 @@ async def change_language(message: types.Message, state: FSMContext):
 
     msg = await bot.send_message(message.chat.id, lang[database.get_language(message)]['choose_language'],
                            reply_markup=Kb.LANGUAGES_COMMAND(message))
-
-    await state.update_data(delete_msg=msg, user_message=message)
+    await state.update_data(delete_msg_id=msg['message_id'], user_message_id=message['message_id'])
 
 
 async def about_olivia(message: types.Message, state: FSMContext):
@@ -181,7 +180,7 @@ async def about_olivia(message: types.Message, state: FSMContext):
         f'[{message.from_user.id} | {message.from_user.first_name}] command: /intro | {datetime.now()}')
     msg = await bot.send_message(message.chat.id, lang[database.get_language(message)]['about_olivia'],
                            reply_markup=Kb.BACK_TO_FORTUNE(message))
-    await state.update_data(delete_msg=msg, user_message=message)
+    await state.update_data(delete_msg_id=msg['message_id'], user_message_id=message['message_id'])
 
 
 async def history(message: types.Message, state: FSMContext):
@@ -224,7 +223,7 @@ async def join(message: types.Message, state: FSMContext):
     msg = await bot.send_message(message.chat.id, lang[database.get_language(message)][
         'join'] + '<a href="https://t.me/+Y32Jaq8sMCFhZTVi">Olivia_Familia</a>', parse_mode='HTML',
                            reply_markup=Kb.BACK_TO_FORTUNE(message))
-    await state.update_data(delete_msg=msg, user_message=message)
+    await state.update_data(delete_msg_id=msg['message_id'], user_message_id=message['message_id'])
 
 
 async def listen_wisdom(message: types.Message, state: FSMContext):
