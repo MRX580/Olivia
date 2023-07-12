@@ -6,7 +6,7 @@ import aiogram.utils.exceptions
 from aiogram import types, Dispatcher
 from aiogram.dispatcher import FSMContext
 
-from create_bot import dp
+from telegram_bot.create_bot import dp, bot
 from keyboards.inline_keyboard import Kb
 from utils.database import User, Fortune, Decks
 from utils.languages import lang
@@ -106,11 +106,20 @@ async def add_reaction(call: types.CallbackQuery, state: FSMContext):
         logging.info(
             f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Не понравилась интерпретация | {datetime.now()}')
         database_fortune.change_reaction('Dislike', message_id)
+        
+
+async def back_to_fortune(call: types.CallbackQuery, state: FSMContext):
+    state_data = await state.get_data()
+    language_message = state_data['delete_msg']
+    user_message = state_data['user_message']
+    await bot.delete_message(chat_id=call.message.chat.id, message_id=language_message['message_id'])
+    await bot.delete_message(chat_id=call.message.chat.id, message_id=user_message['message_id'])
 
 
 def register_handlers_callback(dp: Dispatcher):
     dp.register_callback_query_handler(switch_language, text=['switch english', 'switch russian', 'switch english_command',
                                                               'switch russian_command'], state='*')
     dp.register_callback_query_handler(full_text, text=['full_text'], state=[Session.session, Session.session_3_cards])
+    dp.register_callback_query_handler(back_to_fortune, text=['back_to_fortune'], state='*')
     dp.register_callback_query_handler(add_reaction, text=['like reaction', 'dislike reaction'],
                                        state=[Session.session, Session.session_3_cards])

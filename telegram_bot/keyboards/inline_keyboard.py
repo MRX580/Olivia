@@ -26,13 +26,16 @@ class Kb:
         InlineKeyboardButton(text=lang[database.get_language(data)]['dislike'], callback_data='dislike reaction'),
     )
 
+    BACK_TO_FORTUNE = lambda data: InlineKeyboardMarkup(row_width=1).add(
+        InlineKeyboardButton(text=lang[database.get_language(data)]['back_to_fortune'], callback_data='back_to_fortune')
+    )
+
     LANGUAGES = InlineKeyboardMarkup(row_width=2).add(
         InlineKeyboardButton(text='🇺🇸', callback_data='switch english'),
         InlineKeyboardButton(text='🇷🇺', callback_data='switch russian'),
     )
 
-
-    LANGUAGES_COMMAND = InlineKeyboardMarkup(row_width=2).add(
+    LANGUAGES_COMMAND = lambda data: InlineKeyboardMarkup(row_width=2).add(
         InlineKeyboardButton(text='🇺🇸', callback_data='switch english_command'),
         InlineKeyboardButton(text='🇷🇺', callback_data='switch russian_command'),
-    )
+    ).add(InlineKeyboardButton(text=lang[database.get_language(data)]['back_to_fortune'], callback_data='back_to_fortune'))

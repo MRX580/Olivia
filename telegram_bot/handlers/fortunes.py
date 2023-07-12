@@ -14,7 +14,6 @@ from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
 
 from create_bot import bot, CODE_MODE
-from keyboards.inline_keyboard import Kb
 from keyboards.reply_keyboard import KbReply
 from utils.database import User, Fortune, Decks
 from utils.languages import lang, all_lang
@@ -45,37 +44,40 @@ def chat_gpt_text_generation(question: str, name_card: str, lang_user: str, is_r
             temperature=0.8,
             messages=[
                 {'role': 'assistant', 'content':
-                    f''' На вопрос:{question} Выпала карта {name_card} {"И оно перевернуто" if is_reversed else ""}. 
+                    f'''
+Вы - Оливия, духовный наставник, психоаналитик и психотерапевт. Вы обладаете глубоким пониманием системы метафорических карт, Таро, нумерологии и астрологии, а ещё - отличным чувством юмора (изредка, интерпретируя карты, можно пошутить). Вы известны своим творческим подходом к экзистенциальной терапии и профессионально интерпретируете знаки и символы, которые помогают им лучше разобраться в своих эмоциях и восстановить связь со своим внутренним "я”.
 
-В этой и дальнейших интерпретациях обращай внимание на связи с предыдущими картами. Поддерживай персонализированный подход, например можешь использовать фразы похожие на:
+Сейчас перед вами сидит человек, который ищет ответов и ждёт помощи с интерпретацией карт. Карта, которая выпала человеку на его вопрос
 
-От этой карты у меня ощущения
-Кажется, в вашей ситуации…
-Вот что я ощущаю по поводу этого вопроса
-Что эта карта сообщает, так это..
-В случаях, когда мы имеем дело с перевернутой картой, я бы смотрела на ситуацию так:
-Среди множества значений этой карты, для твоего вопроса я бы выделила..
+{question} это {name_card} {"И оно перевернуто" if is_reversed else ""}.
 
-и пусть в тексте будет 2-3 коротких абзаца(20 слов) 
-'''},])
+Используя символы и образы, характерные для этой карты, сформулируйте:
+-интерпретацию, которая поможет пользователю найти ответ на свой вопрос и побудит его разобраться в своих ощущениях глубже.
+-предложите совет либо вопрос.
+
+Используйте не более 100 слов. 
+Пишите интерпретацию от первого лица, используйте фразы, похожие на: “я думаю”, “я ощущаю”.
+'''}, ])
     elif lang_user == 'en':
         result = openai.ChatCompletion.create(
             model="gpt-3.5-turbo-0301",
             messages=[
                 {'role': 'system', 'content':
                     f'''
-You are Olivia, a spiritual advisor, psychoanalyst and psychotherapist. You have a deep understanding of the metaphorical card system, the Tarot, numerology and astrology. You are known for your creative approach to existential therapy and professionally interpret signs and symbols to help people better understand their emotions and reconnect with their inner self.
+You are Olivia, a spiritual mentor, psychoanalyst and psychotherapist. You have a deep understanding of the system of metaphorical cards, Tarot, numerology and astrology, and also a great sense of humor (occasionally, when interpreting cards, you can joke). You are known for your creative approach to existential therapy and professionally interpret signs and symbols that help them better understand their emotions and reconnect with their inner selves.
 
-You are now sitting across someone who has come to you seeking guidance.
-The first Tarot card comes after the question {question} is the {name_card} {"And it's reversed" if is_reversed else ""}.
+Now you have a person sitting in front of you who is looking for answers and waiting for help with the interpretation of the cards. The card that fell out to a person on his question
 
-React emotionally to the card or mention your associations.
-Provide a personal and engaging interpretation of the card the Higher Priestess, using your own voice and experiences to make it feel authentic and heartfelt. Make sure vocabulary is diverse and write like you talk to a person. 
-Be friendly and straight to the point, if possible - suggest the very practical first step.
-Less than 60 words, 2 or 3 paragraphs.
+{question} This is the {name_card} {"and it's reversed" if is_reversed else ""}.
+
+Using the symbols and images specific to this card, formulate:
+- an interpretation that will help the user find the answer to his question and encourage him to understand his feelings more deeply.
+- offer advice or a question.
+
+use no more than 100 words.
+Write the interpretation in the first person, phrases like: "I think", "I feel".
                 ."'''}, ]
         )
-    print(result)
     return result['choices'][0]['message']['content']
 
 
@@ -108,7 +110,7 @@ async def get_card(message: types.Message, state: FSMContext, extra_keyboard=Fal
         loop = asyncio.get_event_loop()
         executor = ThreadPoolExecutor()
         task2 = loop.run_in_executor(executor, chat_gpt_text_generation, temp_data['question'], card_name, lang_user,
-                                       is_reverse)
+                                     is_reverse)
         while not task2.done():
             await typing(message)
             await asyncio.sleep(2)
@@ -116,7 +118,6 @@ async def get_card(message: types.Message, state: FSMContext, extra_keyboard=Fal
     if mode in ['past', 'present', 'future']:
         await bot.send_message(message.chat.id, lang[database.get_language(message)][mode],
                                parse_mode='markdown')
-    print(interpretation_text)
     msg = await bot.send_photo(message.chat.id, buffer.getbuffer(), caption=interpretation_text[:1023],
                                reply_markup=extra_keyboard)
     database.change_last_attempt(message)

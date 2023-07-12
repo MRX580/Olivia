@@ -92,6 +92,7 @@ I’m here to let my community know when something is going wrong and then direc
         'dislike': 'Dislike',
         'aks_chatgpt': ['Ask chatgpt'],
         'aks_chatgpt_choice': choice(['Ask chatgpt']),
+        'back_to_fortune': 'Back to reading',
     },
 
 
@@ -181,6 +182,7 @@ I’m here to let my community know when something is going wrong and then direc
         'dislike': 'Не нравиться',
         'aks_chatgpt': ['Спросить у чатжпт'],
         'aks_chatgpt_choice': choice(['Спросить у чатжпт']),
+        'back_to_fortune': 'Вернуться к гаданиям',
     }
 }
 
