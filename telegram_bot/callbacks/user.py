@@ -41,13 +41,13 @@ async def switch_language(call: types.CallbackQuery):
                 f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Смена языка на английский command | {datetime.now()}')
             database.switch_language('en', call)
             await call.message.edit_text(lang[database.get_language(call)]['choose_language'],
-                                         reply_markup=Kb.LANGUAGES_COMMAND)
+                                         reply_markup=Kb.LANGUAGES_COMMAND(call))
         elif call.data == 'switch russian_command':
             logging.info(
                 f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Смена языка на русский command | {datetime.now()}')
             database.switch_language('ru', call)
             await call.message.edit_text(lang[database.get_language(call)]['choose_language'],
-                                         reply_markup=Kb.LANGUAGES_COMMAND)
+                                         reply_markup=Kb.LANGUAGES_COMMAND(call))
     except aiogram.utils.exceptions.MessageNotModified:
         pass
     await call.answer()
