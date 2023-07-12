@@ -6,7 +6,7 @@ import aiogram.utils.exceptions
 from aiogram import types, Dispatcher
 from aiogram.dispatcher import FSMContext
 
-from telegram_bot.create_bot import dp, bot
+from create_bot import dp, bot
 from keyboards.inline_keyboard import Kb
 from utils.database import User, Fortune, Decks
 from utils.languages import lang
