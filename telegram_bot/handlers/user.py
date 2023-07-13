@@ -72,7 +72,6 @@ async def close_session(message: types.Message, state: FSMContext):
     data = await state.get_data()
     try:
         time = convert_str_in_datetime(data['close_session'])
-        print(time)
         if data['thx']:
             if time + timedelta(hours=1) < datetime.now():
                 logging.info(
@@ -167,18 +166,21 @@ async def get_question(message: types.Message, state: FSMContext):
     await Session.get_card.set()
 
 
-async def change_language(message: types.Message):
+async def change_language(message: types.Message, state: FSMContext):
     logging.info(
         f'[{message.from_user.id} | {message.from_user.first_name}] command: /language | {datetime.now()}')
 
-    await bot.send_message(message.chat.id, lang[database.get_language(message)]['choose_language'],
-                           reply_markup=Kb.LANGUAGES_COMMAND)
+    msg = await bot.send_message(message.chat.id, lang[database.get_language(message)]['choose_language'],
+                           reply_markup=Kb.LANGUAGES_COMMAND(message))
+    await state.update_data(delete_msg_id=msg['message_id'], user_message_id=message['message_id'])
 
 
-async def about_olivia(message: types.Message):
+async def about_olivia(message: types.Message, state: FSMContext):
     logging.info(
         f'[{message.from_user.id} | {message.from_user.first_name}] command: /intro | {datetime.now()}')
-    await bot.send_message(message.chat.id, lang[database.get_language(message)]['about_olivia'])
+    msg = await bot.send_message(message.chat.id, lang[database.get_language(message)]['about_olivia'],
+                           reply_markup=Kb.BACK_TO_FORTUNE(message))
+    await state.update_data(delete_msg_id=msg['message_id'], user_message_id=message['message_id'])
 
 
 async def history(message: types.Message, state: FSMContext):
@@ -199,7 +201,7 @@ async def history(message: types.Message, state: FSMContext):
                 time_result, i[4], i[1], i[2].replace('\t', '')), parse_mode='HTML')
                 await bot.edit_message_reply_markup(message_id=msg['message_id'], chat_id=message.chat.id,
                                                     reply_markup=Kb.HISTORY_FULL(msg["message_id"]))
-                data[f'{msg["message_id"]}'] = {'time': time_result, 'card_name': i[1], 'full_text': i[2],
+                data[f'{msg["message_id"]}'] = {'time': time_result, 'card_name': i[1], 'full_text': i[8], 'short_text': i[2],
                                                 'user_q': i[4]}
                 msg_d.append(msg["message_id"])
             dp.register_callback_query_handler(full_text_history, text=msg_d, state='*')
@@ -215,11 +217,13 @@ async def feedback(message: types.Message, state: FSMContext):
     await WisdomState.wisdom.set()
 
 
-async def join(message: types.Message):
+async def join(message: types.Message, state: FSMContext):
     logging.info(
         f'[{message.from_user.id} | {message.from_user.first_name}] command: /join | {datetime.now()}')
-    await bot.send_message(message.chat.id, lang[database.get_language(message)][
-        'join'] + '<a href="https://t.me/+Y32Jaq8sMCFhZTVi">Olivia_Familia</a>', parse_mode='HTML')
+    msg = await bot.send_message(message.chat.id, lang[database.get_language(message)][
+        'join'] + '<a href="https://t.me/+Y32Jaq8sMCFhZTVi">Olivia_Familia</a>', parse_mode='HTML',
+                           reply_markup=Kb.BACK_TO_FORTUNE(message))
+    await state.update_data(delete_msg_id=msg['message_id'], user_message_id=message['message_id'])
 
 
 async def listen_wisdom(message: types.Message, state: FSMContext):
@@ -259,8 +263,8 @@ def register_handlers_client(dp: Dispatcher):
     dp.register_message_handler(welcome, commands=['start', 'help'], state='*')
     dp.register_message_handler(about_olivia, commands=['intro'], state='*')
     dp.register_message_handler(join, commands=['join'], state='*')
-    dp.register_message_handler(history, commands=['memories'], state='*')
-    dp.register_message_handler(feedback, commands=['feedback'], state='*')
+    # dp.register_message_handler(history, commands=['memories'], state='*')
+    # dp.register_message_handler(feedback, commands=['feedback'], state='*')
     dp.register_message_handler(change_language, commands=['language'], state='*')
     dp.register_message_handler(get_name, state=Register.input_name)
     dp.register_message_handler(get_question, state=Register.input_question)

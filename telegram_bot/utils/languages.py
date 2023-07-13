@@ -28,7 +28,7 @@ lang = {
                                             f'We can search for another answer.\nJust ask your question',
                                             'What else is needed to be clear?\nAsk me...']),
         'question_start': lambda m: f'What question is bothering you, {database.get_name(m)}?',
-        'choose_language': 'Choose language 🧙‍♂️',
+        'choose_language': 'Current language: english',
         'thanks': lambda m: f'I was glad to help, {database.get_name(m)}',
         'what_say': choice(['Let\'s hear the wisdom from within...\nHere is your card ✨',
                             'To reveal the truth we just need the key. Here is yours:',
@@ -92,6 +92,7 @@ I’m here to let my community know when something is going wrong and then direc
         'dislike': 'Dislike',
         'aks_chatgpt': ['Ask chatgpt'],
         'aks_chatgpt_choice': choice(['Ask chatgpt']),
+        'back_to_fortune': 'Back to reading',
     },
 
 
@@ -120,7 +121,7 @@ I’m here to let my community know when something is going wrong and then direc
                                             f'Итак, каким будет Ваш следующий вопрос?',
                                             'Чем ещё заняты Ваши мысли?\nЗадайте вопрос']),
         'question_start': lambda m: f'Какой вопрос не даёт вам покоя, {database.get_name(m)}?',
-        'choose_language': 'Выберите язык 🧙‍♂️',
+        'choose_language': 'Выбран язык: русский',
         'thanks': lambda m: f'Рада была помочь, {database.get_name(m)}',
         'what_say': choice(['Давайте посмотрим, что скажут карты?', 'Иногда, чтобы открыть истину, нужен верный ключ. Вот '
                      'Ваша ключ-карта', '*прикрывает глаза*\nКарты, дайте нам ответ...', 'Так-так-так... Поглядим?']),
@@ -181,6 +182,7 @@ I’m here to let my community know when something is going wrong and then direc
         'dislike': 'Не нравиться',
         'aks_chatgpt': ['Спросить у чатжпт'],
         'aks_chatgpt_choice': choice(['Спросить у чатжпт']),
+        'back_to_fortune': 'Вернуться к гаданиям',
     }
 }
 

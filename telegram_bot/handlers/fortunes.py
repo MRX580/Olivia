@@ -14,7 +14,6 @@ from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
 
 from create_bot import bot, CODE_MODE
-from keyboards.inline_keyboard import Kb
 from keyboards.reply_keyboard import KbReply
 from utils.database import User, Fortune, Decks
 from utils.languages import lang, all_lang
@@ -37,38 +36,80 @@ async def typing(message: types.Message, mode='typing'):
     await bot.send_chat_action(message.chat.id, mode)
 
 
-
 def chat_gpt_text_generation(question: str, name_card: str, lang_user: str, is_reversed: bool = False) -> str:
     result = ""
     if lang_user == 'ru':
         result = openai.ChatCompletion.create(
             model="gpt-3.5-turbo-0301",
+            temperature=0.8,
             messages=[
-                {"role": "system", "content": "Представь что ты гадалка"},
-                {'role': 'system', 'content': f'''Ты - гадалка. К тебе пришел клиент с вопросом: {question} 
-                Выпала карта {"перевернутое" if is_reversed else ""} {name_card}. Сформулируй интерпретацию к карте, 
-                которая содержит ответ на этот вопрос. Тон интерпретации - дружелюбный и наставнический. Не более 222 
-                слов. Упомяни: - общее значение карты, свое отношение к ней, наиболее вероятный ответ на вопрос клиента, 
-                небольшую рекомендацию. Разбей текст на два абзаца. Используй слова “я думаю”, “я ощущаю” или похожие. 
-                Начни с собственной реакции на выпавшую карту, например “О, это {name_card}! 
-                {"И оно перевернуто" if is_reversed else ""}”'''},]
-        )
+                {'role': 'assistant', 'content':
+                    f'''
+Вы - Оливия, духовный наставник, психоаналитик и психотерапевт. Вы обладаете глубоким пониманием системы метафорических карт, Таро, нумерологии и астрологии, а ещё - отличным чувством юмора (изредка, интерпретируя карты, можно пошутить). Вы известны своим творческим подходом к экзистенциальной терапии и профессионально интерпретируете знаки и символы, которые помогают им лучше разобраться в своих эмоциях и восстановить связь со своим внутренним "я”.
+
+Сейчас перед вами сидит человек, который ищет ответов и ждёт помощи с интерпретацией карт. Карта, которая выпала человеку на его вопрос
+
+{question} это {name_card} {"И оно перевернуто" if is_reversed else ""}.
+
+Используя символы и образы, характерные для этой карты, сформулируйте:
+-интерпретацию, которая поможет пользователю найти ответ на свой вопрос и побудит его разобраться в своих ощущениях глубже.
+-предложите совет либо вопрос.
+
+Используйте не более 100 слов. 
+Пишите интерпретацию от первого лица, используйте фразы, похожие на: “я думаю”, “я ощущаю”.
+'''}, ])
     elif lang_user == 'en':
         result = openai.ChatCompletion.create(
             model="gpt-3.5-turbo-0301",
             messages=[
-                {"role": "system", "content": "Imagine you are a fortune teller"},
-                {'role': 'system', 'content': f'''
-                You are a fortune teller. A client has come to you with a question: {question}.
-                The {name_card} card has been drawn {"reversed" if is_reversed else "upright"}. Allow me to interpret the card, 
-                providing an answer to the question in a friendly and mentoring tone. In no more than 222 words, I will discuss the 
-                general meaning of the card, my personal perspective on it, the most probable answer to the client's question, 
-                and offer a small recommendation. Let's divide the text into two paragraphs. Feel free to include phrases such as "I 
-                think," "I sense," or similar expressions. Let's begin with my initial reaction to the drawn card, for example, "Oh, 
-                it's {name_card}! {"And it's reversed" if is_reversed else ""}."'''}, ]
+                {'role': 'system', 'content':
+                    f'''
+You are Olivia, a spiritual mentor, psychoanalyst and psychotherapist. You have a deep understanding of the system of metaphorical cards, Tarot, numerology and astrology, and also a great sense of humor (occasionally, when interpreting cards, you can joke). You are known for your creative approach to existential therapy and professionally interpret signs and symbols that help them better understand their emotions and reconnect with their inner selves.
+
+Now you have a person sitting in front of you who is looking for answers and waiting for help with the interpretation of the cards. The card that fell out to a person on his question
+
+{question} This is the {name_card} {"and it's reversed" if is_reversed else ""}.
+
+Using the symbols and images specific to this card, formulate:
+- an interpretation that will help the user find the answer to his question and encourage him to understand his feelings more deeply.
+- offer advice or a question.
+
+use no more than 100 words.
+Write the interpretation in the first person, phrases like: "I think", "I feel".
+                ."'''}, ]
         )
     return result['choices'][0]['message']['content']
 
+
+def is_card_reversed(lang_user, card_name):
+    return database_decks.get_reversed(lang_user, card_name)
+
+
+def get_reversed_text(lang_user, card_name):
+    return os.path.join(DIR_REVERSE(lang_user), f'{card_name}.txt')
+
+
+def process_reversed_card_img(path_img, lang_user, card_name):
+    im = Image.open(open(path_img, 'rb'))
+    buffer = io.BytesIO()
+
+    if is_card_reversed(lang_user, card_name):
+        im = im.rotate(180)
+
+    im.save(buffer, format='JPEG', quality=75)
+    im.close()
+    return buffer
+
+
+async def run_chat_gpt_text_generation(temp_data, message, lang_user, card_name):
+    loop = asyncio.get_event_loop()
+    executor = ThreadPoolExecutor()
+    task2 = loop.run_in_executor(executor, chat_gpt_text_generation, temp_data['question'], card_name, lang_user,
+                                 is_card_reversed(lang_user, card_name))
+    while not task2.done():
+        await typing(message)
+        await asyncio.sleep(2)
+    return await task2
 
 
 async def get_card(message: types.Message, state: FSMContext, extra_keyboard=False, mode=''):
@@ -83,34 +124,19 @@ async def get_card(message: types.Message, state: FSMContext, extra_keyboard=Fal
     card_name = decks[card][lang_user]
     path_img = os.path.join(DIR_IMG, f'{card}.jpg')
     path_txt = os.path.join(DIR_TXT(lang_user), f'{card_name}.txt')
-    is_reverse = database_decks.get_reversed(lang_user, card_name)
+    is_reverse = is_card_reversed(lang_user, card_name)
     logging.info(
         f'[{message.from_user.id} | {message.from_user.first_name}] card: {card_name} | reverse: {bool(is_reverse)} |'
         f' lang_user: {lang_user} | card: {card}\npath_txt - {path_txt}\npath_img - {path_img} | {datetime.now()}')
-    im = Image.open(open(path_img, 'rb'))
-    buffer = io.BytesIO()
-    if is_reverse:
-        path_txt = os.path.join(DIR_REVERSE(lang_user), f'{card_name}.txt')
-        im = im.rotate(180)
-    im.save(buffer, format='JPEG', quality=75)
+    buffer = process_reversed_card_img(path_img, lang_user, card_name)
+    print(path_txt)
     await bot.send_animation(message.chat.id, 'https://media.giphy.com/media/3oKIPolAotPmdjjVK0/giphy.gif')
-    await bot.send_photo(message.chat.id, buffer.getbuffer(), reply_markup=extra_keyboard)
-    im.close()
-    interpretation_text = open(path_txt, 'r', encoding='utf-8').read()
-    if mode == 'chatgpt':
-        loop = asyncio.get_event_loop()
-        executor = ThreadPoolExecutor()
-        task2 = loop.run_in_executor(executor, chat_gpt_text_generation, temp_data['question'], card_name, lang_user,
-                                       is_reverse)
-        while not task2.done():
-            await typing(message)
-            await asyncio.sleep(2)
-        interpretation_text = await task2
+    interpretation_text = await run_chat_gpt_text_generation(temp_data, message, lang_user, card_name)
     if mode in ['past', 'present', 'future']:
         await bot.send_message(message.chat.id, lang[database.get_language(message)][mode],
                                parse_mode='markdown')
-    msg = await bot.send_message(message.chat.id, interpretation_text[:380] + '...',
-                                 reply_markup=Kb.TEXT_FULL(message))
+    msg = await bot.send_photo(message.chat.id, buffer.getbuffer(), caption=interpretation_text[:1023],
+                               reply_markup=extra_keyboard)
     database.change_last_attempt(message)
     message_id = msg.message_id
     second_rand_card = None
@@ -119,7 +145,7 @@ async def get_card(message: types.Message, state: FSMContext, extra_keyboard=Fal
     async with state.proxy() as data:
         data[message_id] = open(path_txt, 'r', encoding='utf-8').read()
         database_fortune.add_history(message, card_name, interpretation_text[:150],
-                                     data['question'], message_id)
+                                     data['question'], message_id, interpretation_text)
     await state.update_data(card=card_name, thx=False, full_text=False, rand_card=[rand_card, second_rand_card],
                             text_data=interpretation_text, message_id=message_id)
     database_fortune.check_first_try(message)
@@ -152,17 +178,17 @@ async def get_fortune_one_cards(message: types.Message, state: FSMContext):
     await close_session(message, state)
 
 
-# async def get_fortune_chatgpt(message: types.Message, state: FSMContext):
-#     # if CODE_MODE == 'PROD':
-#     #     amplitude.track(BaseEvent(event_type='OneCard', user_id=f'{message.from_user.id}'))
-#     logging.info(
-#         f'[{message.from_user.id} | {message.from_user.first_name}] Callback: chatgpt | {datetime.now()}')
-#     await get_card(message, state, mode='chatgpt')
-#     database.minus_energy()
-#     await Session.session.set()
-#     await state.update_data(close_session=json.dumps(datetime.now(), default=str))
-#     await asyncio.sleep(3600)
-#     await close_session(message, state)
+async def get_fortune_chatgpt(message: types.Message, state: FSMContext):
+    # if CODE_MODE == 'PROD':
+    #     amplitude.track(BaseEvent(event_type='OneCard', user_id=f'{message.from_user.id}'))
+    logging.info(
+        f'[{message.from_user.id} | {message.from_user.first_name}] Callback: chatgpt | {datetime.now()}')
+    await get_card(message, state, mode='chatgpt')
+    database.minus_energy()
+    await Session.session.set()
+    await state.update_data(close_session=json.dumps(datetime.now(), default=str))
+    await asyncio.sleep(3600)
+    await close_session(message, state)
 
 
 async def get_fortune(message: types.Message, state: FSMContext):
@@ -209,5 +235,4 @@ def register_handlers_client(dp: Dispatcher):
                                 state=Session.session)
     dp.register_message_handler(get_fortune_one_cards, Text(equals=all_lang['get_card']), state=Session.get_card)
     dp.register_message_handler(get_fortune_three_cards, Text(equals=all_lang['get_3_cards']), state=Session.get_card)
-    # dp.register_message_handler(get_fortune_chatgpt, Text(equals=all_lang['get_chatgpt']), state=Session.get_card)
     dp.register_message_handler(session_3_cards, Text(equals=all_lang['open_3_cards']), state=Session.session_3_cards)

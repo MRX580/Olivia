@@ -6,6 +6,7 @@ from callbacks.user import register_handlers_callback
 from aiogram import executor
 from create_bot import dp, CODE_MODE, bot
 from utils.database import Database, User
+from migrations import Migration
 database = Database()
 users = User()
 
@@ -37,6 +38,7 @@ async def send_kpi():
 
 
 async def plus_energy(dp):
+
     asyncio.create_task(database.get_energy())
     asyncio.create_task(send_kpi())
     if CODE_MODE == 'PROD':
@@ -48,4 +50,6 @@ if __name__ == "__main__":
     user.register_handlers_client(dp)
     admin.register_handlers_client(dp)
     register_handlers_callback(dp)
-    executor.start_polling(dp, skip_updates=True, on_startup=plus_energy)
+    if not Migration.is_perform_migrations():
+        print("ONLINE")
+        executor.start_polling(dp, skip_updates=True, on_startup=plus_energy)
