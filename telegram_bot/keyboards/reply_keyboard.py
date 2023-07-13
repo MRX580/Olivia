@@ -8,7 +8,6 @@ class KbReply:
 
     GET_CARD = lambda m: ReplyKeyboardMarkup(resize_keyboard=True, row_width=1).add(
         lang[database.get_language(m)]['fortune_choice'],
-        lang[database.get_language(m)]['past_present_future'],
     )
 
     FULL_TEXT = lambda m: ReplyKeyboardMarkup(resize_keyboard=True, row_width=1).add(
