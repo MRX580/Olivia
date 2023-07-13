@@ -81,6 +81,37 @@ Write the interpretation in the first person, phrases like: "I think", "I feel".
     return result['choices'][0]['message']['content']
 
 
+def is_card_reversed(lang_user, card_name):
+    return database_decks.get_reversed(lang_user, card_name)
+
+
+def get_reversed_text(lang_user, card_name):
+    return os.path.join(DIR_REVERSE(lang_user), f'{card_name}.txt')
+
+
+def process_reversed_card_img(path_img, lang_user, card_name):
+    im = Image.open(open(path_img, 'rb'))
+    buffer = io.BytesIO()
+
+    if is_card_reversed(lang_user, card_name):
+        im = im.rotate(180)
+
+    im.save(buffer, format='JPEG', quality=75)
+    im.close()
+    return buffer
+
+
+async def run_chat_gpt_text_generation(temp_data, message, lang_user, card_name):
+    loop = asyncio.get_event_loop()
+    executor = ThreadPoolExecutor()
+    task2 = loop.run_in_executor(executor, chat_gpt_text_generation, temp_data['question'], card_name, lang_user,
+                                 is_card_reversed(lang_user, card_name))
+    while not task2.done():
+        await typing(message)
+        await asyncio.sleep(2)
+    return await task2
+
+
 async def get_card(message: types.Message, state: FSMContext, extra_keyboard=False, mode=''):
     if not extra_keyboard:
         extra_keyboard = KbReply.FULL_TEXT(message)
@@ -93,28 +124,14 @@ async def get_card(message: types.Message, state: FSMContext, extra_keyboard=Fal
     card_name = decks[card][lang_user]
     path_img = os.path.join(DIR_IMG, f'{card}.jpg')
     path_txt = os.path.join(DIR_TXT(lang_user), f'{card_name}.txt')
-    is_reverse = database_decks.get_reversed(lang_user, card_name)
+    is_reverse = is_card_reversed(lang_user, card_name)
     logging.info(
         f'[{message.from_user.id} | {message.from_user.first_name}] card: {card_name} | reverse: {bool(is_reverse)} |'
         f' lang_user: {lang_user} | card: {card}\npath_txt - {path_txt}\npath_img - {path_img} | {datetime.now()}')
-    im = Image.open(open(path_img, 'rb'))
-    buffer = io.BytesIO()
-    if is_reverse:
-        path_txt = os.path.join(DIR_REVERSE(lang_user), f'{card_name}.txt')
-        im = im.rotate(180)
-    im.save(buffer, format='JPEG', quality=75)
+    buffer = process_reversed_card_img(path_img, lang_user, card_name)
+    print(path_txt)
     await bot.send_animation(message.chat.id, 'https://media.giphy.com/media/3oKIPolAotPmdjjVK0/giphy.gif')
-    im.close()
-    interpretation_text = open(path_txt, 'r', encoding='utf-8').read()
-    if mode == 'chatgpt':
-        loop = asyncio.get_event_loop()
-        executor = ThreadPoolExecutor()
-        task2 = loop.run_in_executor(executor, chat_gpt_text_generation, temp_data['question'], card_name, lang_user,
-                                     is_reverse)
-        while not task2.done():
-            await typing(message)
-            await asyncio.sleep(2)
-        interpretation_text = await task2
+    interpretation_text = await run_chat_gpt_text_generation(temp_data, message, lang_user, card_name)
     if mode in ['past', 'present', 'future']:
         await bot.send_message(message.chat.id, lang[database.get_language(message)][mode],
                                parse_mode='markdown')
@@ -218,5 +235,4 @@ def register_handlers_client(dp: Dispatcher):
                                 state=Session.session)
     dp.register_message_handler(get_fortune_one_cards, Text(equals=all_lang['get_card']), state=Session.get_card)
     dp.register_message_handler(get_fortune_three_cards, Text(equals=all_lang['get_3_cards']), state=Session.get_card)
-    dp.register_message_handler(get_fortune_chatgpt, Text(equals=all_lang['get_chatgpt']), state=Session.get_card)
     dp.register_message_handler(session_3_cards, Text(equals=all_lang['open_3_cards']), state=Session.session_3_cards)
