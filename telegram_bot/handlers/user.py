@@ -138,11 +138,6 @@ async def thanks(message: types.Message, state: FSMContext):
             await close_session(message, state)
 
 
-async def past_present_future(message: types.Message):
-    await bot.send_message(message.chat.id, lang[database.get_language(message)]['start_3_cards']
-                           , reply_markup=KbReply.MENU_3_CARDS(message))
-
-
 async def get_question(message: types.Message, state: FSMContext):
     logging.info(
         f'[{message.from_user.id} | {message.from_user.first_name}] Написал {message.text} в {datetime.now()}')
@@ -270,8 +265,6 @@ def register_handlers_client(dp: Dispatcher):
     dp.register_message_handler(get_question, state=Register.input_question)
     dp.register_message_handler(listen_wisdom, state=WisdomState.wisdom)
     dp.register_message_handler(divination, Text(equals=[*all_lang['divination'], *all_lang['another_alignment']]),
-                                state=Session.get_card)
-    dp.register_message_handler(past_present_future, Text(equals=all_lang['past_present_future']),
                                 state=Session.get_card)
     dp.register_message_handler(thanks, Text(equals=all_lang['thx']), state=Session.session)
     dp.register_message_handler(after_session, Text(equals=all_lang['after_session']))
