@@ -254,12 +254,17 @@ async def after_session(message: types.Message, state: FSMContext):
     await check_time(message, state)
 
 
+async def payment(message: types.Message, state: FSMContext):
+    await bot.send_message(message.chat.id, lang[database.get_language(message)]['payment_choice'],
+                           reply_markup=Kb.PAYMENT)
+    await state.update_data(delete_msg_id=message['message_id'])
+
+
 def register_handlers_client(dp: Dispatcher):
     dp.register_message_handler(welcome, commands=['start', 'help'], state='*')
     dp.register_message_handler(about_olivia, commands=['intro'], state='*')
     dp.register_message_handler(join, commands=['join'], state='*')
-    # dp.register_message_handler(history, commands=['memories'], state='*')
-    # dp.register_message_handler(feedback, commands=['feedback'], state='*')
+    dp.register_message_handler(payment, commands=['payment'], state='*')
     dp.register_message_handler(change_language, commands=['language'], state='*')
     dp.register_message_handler(get_name, state=Register.input_name)
     dp.register_message_handler(get_question, state=Register.input_question)

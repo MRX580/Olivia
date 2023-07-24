@@ -93,6 +93,8 @@ I’m here to let my community know when something is going wrong and then direc
         'aks_chatgpt': ['Ask chatgpt'],
         'aks_chatgpt_choice': choice(['Ask chatgpt']),
         'back_to_fortune': 'Back to reading',
+        'payment_choice': 'Choose a subscription payment method',
+        'switch_payment_to_address': lambda coin, address: f'Your personal {coin} address for payment - {address}',
     },
 
 
@@ -183,6 +185,8 @@ I’m here to let my community know when something is going wrong and then direc
         'aks_chatgpt': ['Спросить у чатжпт'],
         'aks_chatgpt_choice': choice(['Спросить у чатжпт']),
         'back_to_fortune': 'Вернуться к гаданиям',
+        'payment_choice': 'Выберите способ оплаты подписки',
+        'switch_payment_to_address': lambda coin, address: f'Ваш персональный {coin} адресс для оплаты - {address}',
     }
 }
 

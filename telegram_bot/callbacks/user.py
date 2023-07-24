@@ -10,6 +10,7 @@ from create_bot import dp, bot
 from keyboards.inline_keyboard import Kb
 from utils.database import User, Fortune, Decks
 from utils.languages import lang
+from utils.auto_creating_adress import BitcoinAddress, RippleAddress, EthereumAddress
 from states.main import Session
 
 
@@ -116,10 +117,38 @@ async def back_to_fortune(call: types.CallbackQuery, state: FSMContext):
     await bot.delete_message(chat_id=call.message.chat.id, message_id=user_message)
 
 
+async def create_bitcoin_address(call: types.CallbackQuery, state: FSMContext):
+    bitcoin_manager = BitcoinAddress()
+    bitcoin_address = bitcoin_manager.create_address(call.from_user.id)
+    msg = await call.message.edit_text(lang[database.get_language(call)]['switch_payment_to_address']('Bitcoin', bitcoin_address),
+                                 reply_markup=Kb.BACK_TO_FORTUNE(call))
+    await state.update_data(user_message_id=msg['message_id'])
+
+
+async def create_ethereum_address(call: types.CallbackQuery, state: FSMContext):
+    ethereum_manager = EthereumAddress()
+    ethereum_address = ethereum_manager.create_address(call.from_user.id)
+    msg = await call.message.edit_text(lang[database.get_language(call)]['switch_payment_to_address']('Ethereum', ethereum_address),
+                                 reply_markup=Kb.BACK_TO_FORTUNE(call))
+    await state.update_data(user_message_id=msg['message_id'])
+
+
+async def create_ripple_address(call: types.CallbackQuery, state: FSMContext):
+    ripple_manager = RippleAddress()
+    ripple_address = ripple_manager.create_address(call.from_user.id)
+    msg = await call.message.edit_text(lang[database.get_language(call)]['switch_payment_to_address']('Ripple', ripple_address),
+                                 reply_markup=Kb.BACK_TO_FORTUNE(call))
+    await state.update_data(user_message_id=msg['message_id'])
+
+
+
 def register_handlers_callback(dp: Dispatcher):
     dp.register_callback_query_handler(switch_language, text=['switch english', 'switch russian', 'switch english_command',
                                                               'switch russian_command'], state='*')
     dp.register_callback_query_handler(full_text, text=['full_text'], state=[Session.session, Session.session_3_cards])
     dp.register_callback_query_handler(back_to_fortune, text=['back_to_fortune'], state='*')
+    dp.register_callback_query_handler(create_bitcoin_address, text=['bitcoin_address'], state='*')
+    dp.register_callback_query_handler(create_ethereum_address, text=['ethereum_address'], state='*')
+    dp.register_callback_query_handler(create_ripple_address, text=['ripple_address'], state='*')
     dp.register_callback_query_handler(add_reaction, text=['like reaction', 'dislike reaction'],
                                        state=[Session.session, Session.session_3_cards])
