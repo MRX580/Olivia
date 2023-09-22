@@ -35,6 +35,8 @@ class Database:
 
     cur.execute('CREATE TABLE IF NOT EXISTS decks(ru TEXT, en TEXT, reversed BOOL);')
 
+    cur.execute('CREATE TABLE IF NOT EXISTS web3_addresses(user_id INT, bitcoin TEXT, ethereum TEXT, ripple TEXT);')
+
     decks = cur.execute('SELECT * FROM decks').fetchone()
     if decks is None:
         with open('utils/sample.json', 'r', encoding='utf-8') as f:
@@ -256,3 +258,53 @@ class Decks(Database):
 
     def get_reversed(self, lang: str, text: str):
         return self.cur.execute(f'SELECT reversed FROM decks WHERE {lang} = "{text}"').fetchone()[0]
+
+
+class Web3(Database):
+    def create_unique_address(self, blockchain, address, user_id):
+        if not self.__is_user_in_database(user_id):
+            self._create_user_row(user_id)
+
+        self.cur.execute(f'UPDATE web3_addresses SET {blockchain} = "{address}" WHERE user_id = "{user_id}"')
+        self.conn.commit()
+
+    def __is_user_in_database(self, user_id):
+        sql_query = f"SELECT * FROM web3_addresses WHERE user_id = ?"
+        self.cur.execute(sql_query, (user_id,))
+        result = self.cur.fetchall()
+        if not result:
+            return False
+        return True
+
+    def _create_user_row(self, user_id):
+        sql_query = '''
+            INSERT INTO web3_addresses (user_id, bitcoin, ethereum, ripple)
+            VALUES (?, ?, ?, ?)
+            '''
+
+        self.cur.execute(sql_query, (user_id, '', '', ''))
+        self.conn.commit()
+
+    def get_blockchain_address(self, blockchain, user_id):
+        if self.is_user_addresses_exists(blockchain, user_id):
+            query = f'SELECT {blockchain} FROM web3_addresses WHERE user_id = {user_id}'
+            result_query = self.cur.execute(query).fetchone()[0]
+
+            return result_query
+        return None
+
+    def is_user_addresses_exists(self, blockchain, user_id):
+        if blockchain not in ['bitcoin', 'ethereum', 'ripple']:
+            raise "Not correct blockchain, choice from - bitcoin, ethereum, ripple"
+
+        query = f'SELECT {blockchain} FROM web3_addresses WHERE user_id = {user_id}'
+        try:
+            result_query = self.cur.execute(query).fetchone()[0]
+        except TypeError:
+            return False
+        if not result_query:
+            return False
+        return True
+
+
+

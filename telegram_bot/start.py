@@ -36,7 +36,6 @@ async def send_kpi():
             await asyncio.sleep(1)
 
 
-
 async def plus_energy(dp):
 
     asyncio.create_task(database.get_energy())

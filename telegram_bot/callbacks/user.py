@@ -8,7 +8,7 @@ from aiogram.dispatcher import FSMContext
 
 from create_bot import dp, bot
 from keyboards.inline_keyboard import Kb
-from utils.database import User, Fortune, Decks
+from telegram_bot.utils.database import User, Fortune, Decks, Web3
 from utils.languages import lang
 from utils.auto_creating_adress import BitcoinAddress, RippleAddress, EthereumAddress
 from states.main import Session
@@ -18,6 +18,7 @@ logging.basicConfig(filename='bot.log', encoding='utf-8', level=logging.INFO)
 database = User()
 database_fortune = Fortune()
 database_decks = Decks()
+web3 = Web3()
 
 DIR_TXT = lambda lang: f'static/text/{lang}/day_card'
 DIR_TXT_GENERAL = 'static/text/general/day_card'
@@ -117,29 +118,30 @@ async def back_to_fortune(call: types.CallbackQuery, state: FSMContext):
     await bot.delete_message(chat_id=call.message.chat.id, message_id=user_message)
 
 
+async def create_crypto_address(call: types.CallbackQuery, state: FSMContext, crypto_manager, currency):
+    crypto_address = crypto_manager.create_address(call.from_user.id)
+    if web3.is_user_addresses_exists(blockchain=currency.lower(), user_id=call.from_user.id):
+        crypto_address = web3.get_blockchain_address(blockchain=currency.lower(), user_id=call.from_user.id)
+    else:
+        web3.create_unique_address(blockchain=currency.lower(), address=crypto_address, user_id=call.from_user.id)
+    msg = await call.message.edit_text(lang[database.get_language(call)]['switch_payment_to_address'](currency, crypto_address),
+                                 reply_markup=Kb.BACK_TO_FORTUNE(call), parse_mode="MarkdownV2")
+    await state.update_data(user_message_id=msg['message_id'])
+
+
 async def create_bitcoin_address(call: types.CallbackQuery, state: FSMContext):
     bitcoin_manager = BitcoinAddress()
-    bitcoin_address = bitcoin_manager.create_address(call.from_user.id)
-    msg = await call.message.edit_text(lang[database.get_language(call)]['switch_payment_to_address']('Bitcoin', bitcoin_address),
-                                 reply_markup=Kb.BACK_TO_FORTUNE(call))
-    await state.update_data(user_message_id=msg['message_id'])
+    await create_crypto_address(call, state, bitcoin_manager, 'Bitcoin')
 
 
 async def create_ethereum_address(call: types.CallbackQuery, state: FSMContext):
     ethereum_manager = EthereumAddress()
-    ethereum_address = ethereum_manager.create_address(call.from_user.id)
-    msg = await call.message.edit_text(lang[database.get_language(call)]['switch_payment_to_address']('Ethereum', ethereum_address),
-                                 reply_markup=Kb.BACK_TO_FORTUNE(call))
-    await state.update_data(user_message_id=msg['message_id'])
+    await create_crypto_address(call, state, ethereum_manager, 'Ethereum')
 
 
 async def create_ripple_address(call: types.CallbackQuery, state: FSMContext):
     ripple_manager = RippleAddress()
-    ripple_address = ripple_manager.create_address(call.from_user.id)
-    msg = await call.message.edit_text(lang[database.get_language(call)]['switch_payment_to_address']('Ripple', ripple_address),
-                                 reply_markup=Kb.BACK_TO_FORTUNE(call))
-    await state.update_data(user_message_id=msg['message_id'])
-
+    await create_crypto_address(call, state, ripple_manager, 'Ripple')
 
 
 def register_handlers_callback(dp: Dispatcher):

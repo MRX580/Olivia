@@ -72,7 +72,7 @@ async def close_session(message: types.Message, state: FSMContext):
     data = await state.get_data()
     try:
         time = convert_str_in_datetime(data['close_session'])
-        if data['thx']:
+        if not data['thx']:
             if time + timedelta(hours=1) < datetime.now():
                 logging.info(
                     f'[{message.from_user.id} | {message.from_user.first_name}] Callback: close_session(thx) | {datetime.now()}')
@@ -152,10 +152,12 @@ async def get_question(message: types.Message, state: FSMContext):
     try:
         rand_card = data['rand_card']
         rand_card[0], rand_card[1] = rand_card[1], rand_card[0]
+        prompt = data['prompt']
     except KeyError:
         rand_card = None
+        prompt = {'messages': [{'role': 'system', 'content': None}]}
     await state.finish()
-    await state.update_data(rand_card=rand_card)
+    await state.update_data(rand_card=rand_card, prompt=prompt)
     async with state.proxy() as data:
         data['question'] = message.text
     await Session.get_card.set()

@@ -31,25 +31,13 @@ DIR_IMG = 'static/img/decks_1'
 DIR_TXT = lambda lang: f'static/text/{lang}/day_card'
 DIR_REVERSE = lambda lang: f'static/text/{lang}/reverse'
 
-
-async def typing(message: types.Message, mode='typing'):
-    await bot.send_chat_action(message.chat.id, mode)
-
-
-def chat_gpt_text_generation(question: str, name_card: str, lang_user: str, is_reversed: bool = False) -> str:
-    result = ""
-    if lang_user == 'ru':
-        result = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo-0301",
-            temperature=0.8,
-            messages=[
-                {'role': 'assistant', 'content':
-                    f'''
+ru_prompt = lambda question, card, is_reversed: \
+f'''
 Вы - Оливия, духовный наставник, психоаналитик и психотерапевт. Вы обладаете глубоким пониманием системы метафорических карт, Таро, нумерологии и астрологии, а ещё - отличным чувством юмора (изредка, интерпретируя карты, можно пошутить). Вы известны своим творческим подходом к экзистенциальной терапии и профессионально интерпретируете знаки и символы, которые помогают им лучше разобраться в своих эмоциях и восстановить связь со своим внутренним "я”.
 
 Сейчас перед вами сидит человек, который ищет ответов и ждёт помощи с интерпретацией карт. Карта, которая выпала человеку на его вопрос
 
-{question} это {name_card} {"И оно перевернуто" if is_reversed else ""}.
+{question} это {card} {"И оно перевернуто" if is_reversed else ""}.
 
 Используя символы и образы, характерные для этой карты, сформулируйте:
 -интерпретацию, которая поможет пользователю найти ответ на свой вопрос и побудит его разобраться в своих ощущениях глубже.
@@ -57,18 +45,15 @@ def chat_gpt_text_generation(question: str, name_card: str, lang_user: str, is_r
 
 Используйте не более 100 слов. 
 Пишите интерпретацию от первого лица, используйте фразы, похожие на: “я думаю”, “я ощущаю”.
-'''}, ])
-    elif lang_user == 'en':
-        result = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo-0301",
-            messages=[
-                {'role': 'system', 'content':
-                    f'''
+'''
+
+eng_prompt = lambda question, card, is_reversed: \
+f'''
 You are Olivia, a spiritual mentor, psychoanalyst and psychotherapist. You have a deep understanding of the system of metaphorical cards, Tarot, numerology and astrology, and also a great sense of humor (occasionally, when interpreting cards, you can joke). You are known for your creative approach to existential therapy and professionally interpret signs and symbols that help them better understand their emotions and reconnect with their inner selves.
 
 Now you have a person sitting in front of you who is looking for answers and waiting for help with the interpretation of the cards. The card that fell out to a person on his question
 
-{question} This is the {name_card} {"and it's reversed" if is_reversed else ""}.
+{question} This is the {card} {"and it's reversed" if is_reversed else ""}.
 
 Using the symbols and images specific to this card, formulate:
 - an interpretation that will help the user find the answer to his question and encourage him to understand his feelings more deeply.
@@ -76,8 +61,54 @@ Using the symbols and images specific to this card, formulate:
 
 use no more than 100 words.
 Write the interpretation in the first person, phrases like: "I think", "I feel".
-                ."'''}, ]
-        )
+"'''
+
+ru_continue_prompt = lambda question, card, is_reversed: \
+f'''
+На вопрос: {question} Выпала карта {card} {"И оно перевернуто" if is_reversed else ""}. 
+Сохраняй свой подход к интерпретациям. Если это уместно для вопроса - дай практический совет или задай вопрос от карты.
+'''
+
+eng_continue_prompt = lambda question, card, is_reversed: \
+f'''
+The person draws another card from the deck and look at you expectantly, waiting for your interpretation. 
+The question was {question} the tarot card you see is the {card} {"and it's reversed" if is_reversed else ""}
+'''
+
+
+async def typing(message: types.Message, mode='typing'):
+    await bot.send_chat_action(message.chat.id, mode)
+
+
+def chat_gpt_text_generation(state_data: FSMContext, name_card: str, lang_user: str, is_reversed: bool = False) -> str:
+    result = ""
+    if state_data['prompt']['messages'][0]['content'] is None:
+        if lang_user == 'ru':
+            result = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo-0301",
+                temperature=0.8,
+                messages=[
+                    {'role': 'assistant', 'content': ru_prompt(state_data['question'], name_card, is_reversed)}])
+        elif lang_user == 'en':
+            result = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo-0301",
+                messages=[
+                    {'role': 'system', 'content': eng_prompt(state_data['question'], name_card, is_reversed)}]
+            )
+    else:
+        if lang_user == 'ru':
+            result = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo-0301",
+                temperature=0.8,
+                messages=[*state_data['prompt']['messages'],
+                          {'role': 'system', 'content': ru_continue_prompt(state_data['question'], name_card, is_reversed)}])
+        elif lang_user == 'en':
+            result = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo-0301",
+                temperature=0.8,
+                messages=[*state_data['prompt']['messages'],
+                          {'role': 'system',
+                           'content': eng_continue_prompt(state_data['question'], name_card, is_reversed)}])
     return result['choices'][0]['message']['content']
 
 
@@ -101,10 +132,11 @@ def process_reversed_card_img(path_img, lang_user, card_name):
     return buffer
 
 
-async def run_chat_gpt_text_generation(temp_data, message, lang_user, card_name):
+async def run_chat_gpt_text_generation(state: FSMContext, message, lang_user, card_name):
     loop = asyncio.get_event_loop()
     executor = ThreadPoolExecutor()
-    task2 = loop.run_in_executor(executor, chat_gpt_text_generation, temp_data['question'], card_name, lang_user,
+    temp_data = await state.get_data()
+    task2 = loop.run_in_executor(executor, chat_gpt_text_generation, temp_data, card_name, lang_user,
                                  is_card_reversed(lang_user, card_name))
     while not task2.done():
         await typing(message)
@@ -129,9 +161,13 @@ async def get_card(message: types.Message, state: FSMContext, extra_keyboard=Fal
         f'[{message.from_user.id} | {message.from_user.first_name}] card: {card_name} | reverse: {bool(is_reverse)} |'
         f' lang_user: {lang_user} | card: {card}\npath_txt - {path_txt}\npath_img - {path_img} | {datetime.now()}')
     buffer = process_reversed_card_img(path_img, lang_user, card_name)
-    print(path_txt)
     await bot.send_animation(message.chat.id, 'https://media.giphy.com/media/3oKIPolAotPmdjjVK0/giphy.gif')
-    interpretation_text = await run_chat_gpt_text_generation(temp_data, message, lang_user, card_name)
+    interpretation_text = await run_chat_gpt_text_generation(state, message, lang_user, card_name)
+    if temp_data['prompt']['messages'][0]['content'] is None:
+        await state.update_data(prompt={'messages': [{'role': 'system', 'content': interpretation_text}]})
+    else:
+        await state.update_data(prompt={'messages': [*temp_data['prompt']['messages'],
+                                                     {'role': 'system', 'content': interpretation_text}]})
     if mode in ['past', 'present', 'future']:
         await bot.send_message(message.chat.id, lang[database.get_language(message)][mode],
                                parse_mode='markdown')
