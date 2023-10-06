@@ -1,6 +1,5 @@
 import asyncio
 import datetime
-
 from handlers import user, fortunes, admin
 from callbacks.user import register_handlers_callback
 from aiogram import executor

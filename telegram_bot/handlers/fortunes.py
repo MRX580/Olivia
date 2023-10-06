@@ -237,7 +237,7 @@ async def get_fortune(message: types.Message, state: FSMContext):
                                    reply_markup=types.ReplyKeyboardRemove())
         await Register.input_question.set()
         await state.update_data(check='False')
-        await asyncio.sleep(45)
+        await asyncio.sleep(90)
         await check_time(message, state)
         return
     else:

@@ -112,7 +112,7 @@ async def get_name(message: types.Message, state: FSMContext):
     await bot.send_message(message.chat.id, lang[database.get_language(message)]['question_start'](message))
     await Register.input_question.set()
     await state.update_data(check='False')
-    await asyncio.sleep(45)
+    await asyncio.sleep(90)
     await check_time(message, state)
 
 
@@ -252,7 +252,7 @@ async def after_session(message: types.Message, state: FSMContext):
                            )
     await Register.input_question.set()
     await state.update_data(check='False')
-    await asyncio.sleep(45)
+    await asyncio.sleep(90)
     await check_time(message, state)
 
 
