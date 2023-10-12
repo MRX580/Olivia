@@ -1,5 +1,5 @@
 from random import choice
-from utils.database import User, Fortune
+from telegram_bot.utils.database import User, Fortune
 
 database = User()
 database_fortune = Fortune()

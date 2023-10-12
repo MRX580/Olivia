@@ -18,3 +18,8 @@ class FortuneState(StatesGroup):
 
 class WisdomState(StatesGroup):
     wisdom = State()
+
+
+class ChannelNewsLetter(StatesGroup):
+    wait_for_data = State()
+    confirm_newletter_data = State()

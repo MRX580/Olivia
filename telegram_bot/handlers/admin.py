@@ -1,12 +1,12 @@
-import logging
-
-from create_bot import bot, dp, CODE_MODE
+from telegram_bot.create_bot import bot
 from aiogram import types, Dispatcher
-from utils.database import User
+from telegram_bot.utils.database import User
 
 ADMINS = [951679992, 272433944, 178594884, 610027951]
 
 users = User()
+
+
 def is_admin(user_id):
     return user_id in ADMINS
 

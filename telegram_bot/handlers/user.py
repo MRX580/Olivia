@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import json
 
 from aiogram import types, Dispatcher
@@ -8,15 +7,15 @@ from aiogram.dispatcher import FSMContext
 from datetime import datetime, timedelta
 from amplitude import Amplitude, BaseEvent
 
-from create_bot import bot, dp, CODE_MODE
-from keyboards.inline_keyboard import Kb
-from keyboards.reply_keyboard import KbReply
-from utils.database import User, Fortune, Wisdom
-from utils.languages import lang, all_lang
-from callbacks.user import full_text_history
-from states.main import Session, WisdomState, Register
+from telegram_bot.create_bot import bot, dp, CODE_MODE
+from telegram_bot.keyboards.inline_keyboard import Kb
+from telegram_bot.keyboards.reply_keyboard import KbReply
+from telegram_bot.utils.database import User, Fortune, Wisdom
+from telegram_bot.utils.languages import lang, all_lang
+from telegram_bot.utils.logging_system import logging_to_file
+from telegram_bot.callbacks.user import full_text_history
+from telegram_bot.states.main import Session, WisdomState, Register
 
-logging.basicConfig(filename='bot.log', encoding='utf-8', level=logging.INFO)
 database = User()
 database_fortune = Fortune()
 database_wisdom = Wisdom()
@@ -42,8 +41,7 @@ def convert_str_in_datetime(time_str: str) -> datetime:
 
 
 async def welcome(message: types.Message, state: FSMContext):
-    logging.info(
-        f'[{message.from_user.id} | {message.from_user.first_name}] Написал {message.text} в {datetime.now()}')
+    logging_to_file('info', f'[{message.from_user.id} | {message.from_user.first_name}] Написал {message.text}')
     await state.finish()
     if database.is_user_exists(message):
         await bot.send_message(message.chat.id, lang[database.get_language(message)]['send_welcome'](message),
@@ -57,8 +55,7 @@ async def welcome(message: types.Message, state: FSMContext):
 
 
 async def divination(message: types.Message):
-    logging.info(
-        f'[{message.from_user.id} | {message.from_user.first_name}] Написал {message.text} в {datetime.now()}')
+    logging_to_file('info', f'[{message.from_user.id} | {message.from_user.first_name}] Написал {message.text}')
     text = lang[database.get_language(message)]['divination_text']
     if message.text.lower() in all_lang['another_alignment']:
         text = lang[database.get_language(message)]['another_alignment_text']
@@ -68,21 +65,21 @@ async def divination(message: types.Message):
     await Session.get_card.set()
 
 
-async def close_session(message: types.Message, state: FSMContext):
+async def close_session_with_delay(message: types.Message, state: FSMContext, time: int = 0):
+    if time:
+        await asyncio.sleep(time)
     data = await state.get_data()
     try:
         time = convert_str_in_datetime(data['close_session'])
         if not data['thx']:
             if time + timedelta(hours=1) < datetime.now():
-                logging.info(
-                    f'[{message.from_user.id} | {message.from_user.first_name}] Callback: close_session(thx) | {datetime.now()}')
+                logging_to_file('info', f'[{message.from_user.id} | {message.from_user.first_name}] Callback: close_session_with_delay(thx)')
                 await bot.send_message(message.chat.id, lang[database.get_language(message)]['end_session'](message),
                                        reply_markup=KbReply.AFTER_END_SESSION(message))
                 await state.reset_state()
         else:
             if time + timedelta(minutes=5) < datetime.now():
-                logging.info(
-                    f'[{message.from_user.id} | {message.from_user.first_name}] Callback: close_session | {datetime.now()}')
+                logging_to_file('info', f'[{message.from_user.id} | {message.from_user.first_name}] Callback: close_session_with_delay')
                 await bot.send_message(message.chat.id, lang[database.get_language(message)]['end_session'](message),
                                        disable_notification=True,
                                        reply_markup=KbReply.AFTER_END_SESSION(message))
@@ -93,8 +90,7 @@ async def close_session(message: types.Message, state: FSMContext):
 
 async def check_time(message: types.Message, state: FSMContext):
     data = await state.get_data()
-    logging.info(
-        f'[{message.from_user.id} | {message.from_user.first_name}] Callback: check_time | {datetime.now()}')
+    logging_to_file('info', f'[{message.from_user.id} | {message.from_user.first_name}] Callback: check_time')
     try:
         if data['check'] == 'False':
             await bot.send_message(message.chat.id, lang[database.get_language(message)]['get_card'],
@@ -106,8 +102,7 @@ async def check_time(message: types.Message, state: FSMContext):
 
 
 async def get_name(message: types.Message, state: FSMContext):
-    logging.info(
-        f'[{message.from_user.id} | {message.from_user.first_name}] Написал {message.text} в {datetime.now()}')
+    logging_to_file('info', f'[{message.from_user.id} | {message.from_user.first_name}] Написал {message.text}')
     database.update_name(message)
     await bot.send_message(message.chat.id, lang[database.get_language(message)]['question_start'](message))
     await Register.input_question.set()
@@ -117,8 +112,7 @@ async def get_name(message: types.Message, state: FSMContext):
 
 
 async def thanks(message: types.Message, state: FSMContext):
-    logging.info(
-        f'[{message.from_user.id} | {message.from_user.first_name}] Callback: thx | {datetime.now()}')
+    logging_to_file('info', f'[{message.from_user.id} | {message.from_user.first_name}] Callback: thx')
     async with state.proxy() as data:
         if not data['thx']:
             if CODE_MODE == 'PROD':
@@ -134,13 +128,11 @@ async def thanks(message: types.Message, state: FSMContext):
             else:
                 await bot.send_message(message.chat.id, lang[database.get_language(message)]['thanks'](message),
                                        reply_markup=KbReply.FULL_TEXT_WITHOUT_THX(message))
-            await asyncio.sleep(300)
-            await close_session(message, state)
+            await close_session_with_delay(message, state, 300)
 
 
 async def get_question(message: types.Message, state: FSMContext):
-    logging.info(
-        f'[{message.from_user.id} | {message.from_user.first_name}] Написал {message.text} в {datetime.now()}')
+    logging_to_file('info', f'[{message.from_user.id} | {message.from_user.first_name}] Написал {message.text}')
     if CODE_MODE == 'PROD':
         amplitude.track(BaseEvent(event_type='UserQuestion', user_id=f'{message.from_user.id}',
                                   event_properties={'question': message.text}))
@@ -164,8 +156,7 @@ async def get_question(message: types.Message, state: FSMContext):
 
 
 async def change_language(message: types.Message, state: FSMContext):
-    logging.info(
-        f'[{message.from_user.id} | {message.from_user.first_name}] command: /language | {datetime.now()}')
+    logging_to_file('info', f'[{message.from_user.id} | {message.from_user.first_name}] command: /language')
 
     msg = await bot.send_message(message.chat.id, lang[database.get_language(message)]['choose_language'],
                            reply_markup=Kb.LANGUAGES_COMMAND(message))
@@ -173,16 +164,14 @@ async def change_language(message: types.Message, state: FSMContext):
 
 
 async def about_olivia(message: types.Message, state: FSMContext):
-    logging.info(
-        f'[{message.from_user.id} | {message.from_user.first_name}] command: /intro | {datetime.now()}')
+    logging_to_file('info', f'[{message.from_user.id} | {message.from_user.first_name}] command: /intro')
     msg = await bot.send_message(message.chat.id, lang[database.get_language(message)]['about_olivia'],
                            reply_markup=Kb.BACK_TO_FORTUNE(message))
     await state.update_data(delete_msg_id=msg['message_id'], user_message_id=message['message_id'])
 
 
 async def history(message: types.Message, state: FSMContext):
-    logging.info(
-        f'[{message.from_user.id} | {message.from_user.first_name}] command: /memories | {datetime.now()}')
+    logging_to_file('info', f'[{message.from_user.id} | {message.from_user.first_name}] command: /memories')
     async with state.proxy() as data:
         if database_fortune.get_history(message):
             msg_d = []
@@ -207,16 +196,14 @@ async def history(message: types.Message, state: FSMContext):
 
 
 async def feedback(message: types.Message, state: FSMContext):
-    logging.info(
-        f'[{message.from_user.id} | {message.from_user.first_name}] command: /addwisdom | {datetime.now()}')
+    logging_to_file('info', f'[{message.from_user.id} | {message.from_user.first_name}] command: /addwisdom ')
     await bot.send_message(message.chat.id, lang[database.get_language(message)]['add_feedback_text'])
     await state.update_data(last_state=await state.get_state())
     await WisdomState.wisdom.set()
 
 
 async def join(message: types.Message, state: FSMContext):
-    logging.info(
-        f'[{message.from_user.id} | {message.from_user.first_name}] command: /join | {datetime.now()}')
+    logging_to_file('info', f'[{message.from_user.id} | {message.from_user.first_name}] command: /join')
     msg = await bot.send_message(message.chat.id, lang[database.get_language(message)][
         'join'] + '<a href="https://t.me/+Y32Jaq8sMCFhZTVi">Olivia_Familia</a>', parse_mode='HTML',
                            reply_markup=Kb.BACK_TO_FORTUNE(message))
@@ -224,7 +211,7 @@ async def join(message: types.Message, state: FSMContext):
 
 
 async def listen_wisdom(message: types.Message, state: FSMContext):
-    logging.info(f'[{message.from_user.id} | {message.from_user.first_name}] Написал {message.text} в {datetime.now()}')
+    logging_to_file('info', f'[{message.from_user.id} | {message.from_user.first_name}] Написал {message.text}')
     database_wisdom.add_wisdom(message, message.text)
     await bot.send_message(message.chat.id, lang[database.get_language(message)]['answer_feedback'](message))
     data = await state.get_data()  # Сделать проверку на сессию
