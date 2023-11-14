@@ -95,7 +95,16 @@ async def check_time(message: types.Message, state: FSMContext):
         if data['check'] == 'False':
             await bot.send_message(message.chat.id, lang[database.get_language(message)]['get_card'],
                                    reply_markup=KbReply.GET_CARD(message))
-            await state.update_data(check='True', question=None)
+            data = await state.get_data('rand_card')
+            try:
+                rand_card = data['rand_card']
+                rand_card[0], rand_card[1] = rand_card[1], rand_card[0]
+                prompt = data['prompt']
+            except KeyError:
+                rand_card = None
+                prompt = {'messages': [{'role': 'system', 'content': None}]}
+            await state.finish()
+            await state.update_data(rand_card=rand_card, prompt=prompt, check='True', question=None)
             await Session.get_card.set()
     except KeyError:
         pass
