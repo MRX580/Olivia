@@ -253,7 +253,7 @@ def register_handlers_client(dp: Dispatcher):
     dp.register_message_handler(welcome, commands=['start', 'help'], state='*')
     dp.register_message_handler(about_olivia, commands=['intro'], state='*')
     dp.register_message_handler(join, commands=['join'], state='*')
-    dp.register_message_handler(payment, commands=['payment'], state='*')
+    # dp.register_message_handler(payment, commands=['payment'], state='*')
     dp.register_message_handler(change_language, commands=['language'], state='*')
     dp.register_message_handler(get_name, state=Register.input_name)
     dp.register_message_handler(get_question, state=Register.input_question)
