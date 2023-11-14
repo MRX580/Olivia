@@ -1,22 +1,19 @@
-import logging
-
-from datetime import datetime
-
 import aiogram.utils.exceptions
 from aiogram import types, Dispatcher
 from aiogram.dispatcher import FSMContext
 
-from create_bot import dp, bot
-from keyboards.inline_keyboard import Kb
-from utils.database import User, Fortune, Decks
-from utils.languages import lang
-from states.main import Session
+from telegram_bot.create_bot import dp, bot
+from telegram_bot.keyboards.inline_keyboard import Kb
+from telegram_bot.utils.database import User, Fortune, Decks, Web3
+from telegram_bot.utils.languages import lang
+from telegram_bot.utils.logging_system import logging_to_file
+from telegram_bot.utils.auto_creating_adress import BitcoinAddress, RippleAddress, EthereumAddress
+from telegram_bot.states.main import Session
 
-
-logging.basicConfig(filename='bot.log', encoding='utf-8', level=logging.INFO)
 database = User()
 database_fortune = Fortune()
 database_decks = Decks()
+web3 = Web3()
 
 DIR_TXT = lambda lang: f'static/text/{lang}/day_card'
 DIR_TXT_GENERAL = 'static/text/general/day_card'
@@ -25,26 +22,22 @@ DIR_TXT_GENERAL = 'static/text/general/day_card'
 async def switch_language(call: types.CallbackQuery):
     try:
         if call.data == 'switch english':
-            logging.info(
-                f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Смена языка на английский | {datetime.now()}')
+            logging_to_file('info', f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Смена языка на английский')
             database.switch_language('en', call)
             await call.message.edit_text(lang[database.get_language(call)]['start'],
                                          reply_markup=Kb.LANGUAGES)
         elif call.data == 'switch russian':
-            logging.info(
-                f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Смена языка на русский | {datetime.now()}')
+            logging_to_file('info', f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Смена языка на русский')
             database.switch_language('ru', call)
             await call.message.edit_text(lang[database.get_language(call)]['start'],
                                          reply_markup=Kb.LANGUAGES)
         elif call.data == 'switch english_command':
-            logging.info(
-                f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Смена языка на английский command | {datetime.now()}')
+            logging_to_file('info', f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Смена языка на английский command')
             database.switch_language('en', call)
             await call.message.edit_text(lang[database.get_language(call)]['choose_language'],
                                          reply_markup=Kb.LANGUAGES_COMMAND(call))
         elif call.data == 'switch russian_command':
-            logging.info(
-                f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Смена языка на русский command | {datetime.now()}')
+            logging_to_file('info', f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Смена языка на русский command')
             database.switch_language('ru', call)
             await call.message.edit_text(lang[database.get_language(call)]['choose_language'],
                                          reply_markup=Kb.LANGUAGES_COMMAND(call))
@@ -55,8 +48,7 @@ async def switch_language(call: types.CallbackQuery):
 
 async def full_text(call: types.CallbackQuery, state: FSMContext):
     if call.data == 'full_text':
-        logging.info(
-            f'[{call.from_user.id} | {call.from_user.first_name}] Callback: full_text | {datetime.now()}')
+        logging_to_file('info', f'[{call.from_user.id} | {call.from_user.first_name}] Callback: full_text')
         data = await state.get_data()
         text = data['text_data']
         if len(text) > 4096:
@@ -99,12 +91,10 @@ async def add_reaction(call: types.CallbackQuery, state: FSMContext):
     state_data = await state.get_data()
     message_id = state_data['message_id']
     if call.data == 'like reaction':
-            logging.info(
-                f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Понравилась интерпретация | {datetime.now()}')
-            database_fortune.change_reaction('Like', message_id)
+        logging_to_file('info', f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Понравилась интерпретация')
+        database_fortune.change_reaction('Like', message_id)
     elif call.data == 'dislike reaction':
-        logging.info(
-            f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Не понравилась интерпретация | {datetime.now()}')
+        logging_to_file('info', f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Не понравилась интерпретация')
         database_fortune.change_reaction('Dislike', message_id)
         
 
@@ -116,10 +106,39 @@ async def back_to_fortune(call: types.CallbackQuery, state: FSMContext):
     await bot.delete_message(chat_id=call.message.chat.id, message_id=user_message)
 
 
+async def create_crypto_address(call: types.CallbackQuery, state: FSMContext, crypto_manager, currency):
+    crypto_address = crypto_manager.create_address(call.from_user.id)
+    if web3.is_user_addresses_exists(blockchain=currency.lower(), user_id=call.from_user.id):
+        crypto_address = web3.get_blockchain_address(blockchain=currency.lower(), user_id=call.from_user.id)
+    else:
+        web3.create_unique_address(blockchain=currency.lower(), address=crypto_address, user_id=call.from_user.id)
+    msg = await call.message.edit_text(lang[database.get_language(call)]['switch_payment_to_address'](currency, crypto_address),
+                                 reply_markup=Kb.BACK_TO_FORTUNE(call), parse_mode="MarkdownV2")
+    await state.update_data(user_message_id=msg['message_id'])
+
+
+async def create_bitcoin_address(call: types.CallbackQuery, state: FSMContext):
+    bitcoin_manager = BitcoinAddress()
+    await create_crypto_address(call, state, bitcoin_manager, 'Bitcoin')
+
+
+async def create_ethereum_address(call: types.CallbackQuery, state: FSMContext):
+    ethereum_manager = EthereumAddress()
+    await create_crypto_address(call, state, ethereum_manager, 'Ethereum')
+
+
+async def create_ripple_address(call: types.CallbackQuery, state: FSMContext):
+    ripple_manager = RippleAddress()
+    await create_crypto_address(call, state, ripple_manager, 'Ripple')
+
+
 def register_handlers_callback(dp: Dispatcher):
     dp.register_callback_query_handler(switch_language, text=['switch english', 'switch russian', 'switch english_command',
                                                               'switch russian_command'], state='*')
     dp.register_callback_query_handler(full_text, text=['full_text'], state=[Session.session, Session.session_3_cards])
     dp.register_callback_query_handler(back_to_fortune, text=['back_to_fortune'], state='*')
+    dp.register_callback_query_handler(create_bitcoin_address, text=['bitcoin_address'], state='*')
+    dp.register_callback_query_handler(create_ethereum_address, text=['ethereum_address'], state='*')
+    dp.register_callback_query_handler(create_ripple_address, text=['ripple_address'], state='*')
     dp.register_callback_query_handler(add_reaction, text=['like reaction', 'dislike reaction'],
                                        state=[Session.session, Session.session_3_cards])

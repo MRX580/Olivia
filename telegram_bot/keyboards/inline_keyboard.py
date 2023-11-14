@@ -1,6 +1,6 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup
-from utils.languages import lang
-from utils.database import User
+from telegram_bot.utils.languages import lang
+from telegram_bot.utils.database import User
 
 database = User()
 
@@ -39,3 +39,9 @@ class Kb:
         InlineKeyboardButton(text='🇺🇸', callback_data='switch english_command'),
         InlineKeyboardButton(text='🇷🇺', callback_data='switch russian_command'),
     ).add(InlineKeyboardButton(text=lang[database.get_language(data)]['back_to_fortune'], callback_data='back_to_fortune'))
+
+    PAYMENT = InlineKeyboardMarkup(resize_keyboard=True, row_width=2).add(
+        InlineKeyboardButton('Bitcoin(BTC)', callback_data='bitcoin_address'),
+        InlineKeyboardButton('Ethereum(ETH)', callback_data='ethereum_address'),
+        InlineKeyboardButton('Ripple(XRP)', callback_data='ripple_address')
+    )

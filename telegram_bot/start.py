@@ -1,7 +1,6 @@
 import asyncio
 import datetime
-
-from handlers import user, fortunes, admin
+from handlers import user, fortunes, admin, channels
 from callbacks.user import register_handlers_callback
 from aiogram import executor
 from create_bot import dp, CODE_MODE, bot
@@ -36,7 +35,6 @@ async def send_kpi():
             await asyncio.sleep(1)
 
 
-
 async def plus_energy(dp):
 
     asyncio.create_task(database.get_energy())
@@ -49,6 +47,7 @@ if __name__ == "__main__":
     fortunes.register_handlers_client(dp)
     user.register_handlers_client(dp)
     admin.register_handlers_client(dp)
+    channels.register_handlers_client(dp)
     register_handlers_callback(dp)
     if not Migration.is_perform_migrations():
         print("ONLINE")

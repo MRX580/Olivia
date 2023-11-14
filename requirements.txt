@@ -1,7 +1,8 @@
-aiogram
-python-dotenv
-openai
-pillow
-aioredis
-redis
-amplitude-analytics
+aiogram==2.25.1
+python-dotenv==1.0.0
+openai==0.27.8
+pillow==9.5.0
+aioredis==2.0.1
+redis==4.5.5
+amplitude-analytics==1.1.1
+requests~=2.31.0

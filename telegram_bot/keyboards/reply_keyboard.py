@@ -1,6 +1,6 @@
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup
-from utils.languages import lang
-from utils.database import User
+from aiogram.types import ReplyKeyboardMarkup
+from telegram_bot.utils.languages import lang
+from telegram_bot.utils.database import User
 
 database = User()
 
