@@ -23,10 +23,9 @@ class BirthRequestMiddleware(BaseMiddleware):
         is_birth = database_temp.get_birth_status(message.from_user.id)
         is_user = database.is_user_exists(message)
 
-        if not is_birth and await current_state.get_state() != 'input_location' and is_user:
+        if not is_birth and not 'input_location' in await current_state.get_state() and is_user:
             await message.answer(lang[database.get_language(message)]['not_confirmed_birth'])
             raise BirthRequestNotSent()
-
 
 
 class BirthRequestNotSent(Exception):
@@ -35,10 +34,10 @@ class BirthRequestNotSent(Exception):
 
 async def birth_request_not_sent_handler(update: Update, exception):
     print(update.message.from_user.id)
-    await update.message.answer(lang[database.get_language(update)]['get_date_start'], reply_markup=await DialogCalendar().start_calendar())
+    await update.message.answer(lang[database.get_language(update)]['get_date_start'],
+                                reply_markup=await DialogCalendar().start_calendar())
 
 
 def middleware_register(dp):
     dp.middleware.setup(BirthRequestMiddleware())
     dp.register_errors_handler(birth_request_not_sent_handler, exception=BirthRequestNotSent)
-

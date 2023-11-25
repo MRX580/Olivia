@@ -103,7 +103,7 @@ class User(Database):
         self.conn.commit()
 
     def update_natal_data(self, tg_user: Message, natal_data):
-        self.cur.execute(f'UPDATE users SET natal_data = "{natal_data}" WHERE user_id = {tg_user.from_user.id}')
+        self.cur.execute(f'UPDATE users SET natal_data = {natal_data} WHERE user_id = {tg_user.from_user.id}')
         self.conn.commit()
 
     def update_natal_city(self, tg_user: Message, natal_city):
