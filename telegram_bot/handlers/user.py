@@ -1,16 +1,18 @@
 import asyncio
 import json
+import requests
 
 from aiogram import types, Dispatcher
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher import FSMContext
 from datetime import datetime, timedelta
 from amplitude import Amplitude, BaseEvent
+from aiogram_calendar import DialogCalendar
 
 from telegram_bot.create_bot import bot, dp, CODE_MODE
 from telegram_bot.keyboards.inline_keyboard import Kb
 from telegram_bot.keyboards.reply_keyboard import KbReply
-from telegram_bot.utils.database import User, Fortune, Wisdom
+from telegram_bot.utils.database import User, Fortune, Wisdom, Temp
 from telegram_bot.utils.languages import lang, all_lang
 from telegram_bot.utils.logging_system import logging_to_file
 from telegram_bot.callbacks.user import full_text_history
@@ -19,6 +21,7 @@ from telegram_bot.states.main import Session, WisdomState, Register
 database = User()
 database_fortune = Fortune()
 database_wisdom = Wisdom()
+database_temp = Temp()
 
 amplitude = Amplitude("bbdc22a8304dbf12f2aaff6cd40fbdd3")
 
@@ -113,11 +116,13 @@ async def check_time(message: types.Message, state: FSMContext):
 async def get_name(message: types.Message, state: FSMContext):
     logging_to_file('info', f'[{message.from_user.id} | {message.from_user.first_name}] Написал {message.text}')
     database.update_name(message)
-    await bot.send_message(message.chat.id, lang[database.get_language(message)]['question_start'](message))
-    await Register.input_question.set()
-    await state.update_data(check='False')
-    await asyncio.sleep(90)
-    await check_time(message, state)
+    await bot.send_message(message.chat.id, lang[database.get_language(message)]['get_date_start'],
+                           reply_markup=await DialogCalendar(language=database.get_language(message)).start_calendar(year=1995))
+    # await bot.send_message(message.chat.id, lang[database.get_language(message)]['question_start'](message))
+    # await Register.input_question.set()
+    # await state.update_data(check='False')
+    # await asyncio.sleep(90)
+    # await check_time(message, state)
 
 
 async def thanks(message: types.Message, state: FSMContext):
@@ -258,11 +263,56 @@ async def payment(message: types.Message, state: FSMContext):
     await state.update_data(delete_msg_id=message['message_id'])
 
 
+async def start_date(message: types.Message):
+    await message.answer("Please select a date: ", reply_markup=await DialogCalendar(language=database.get_language(message)).start_calendar(year=1995))
+
+
+def get_city_info(city):
+    api_key = 'dfcf0c52ee3e443eb6b799640b21b754'
+    base_url = 'https://api.opencagedata.com/geocode/v1/json'
+
+    params = {
+        'q': city,
+        'key': api_key
+    }
+
+    response = requests.get(base_url, params=params)
+    data = response.json()
+
+    if response.status_code == 200 and data.get('results'):
+        # Вам могут быть интересны различные данные, например, координаты города
+        city_info = data['results'][0]
+        return city_info
+    else:
+        return None
+
+
+async def get_location(message: types.Message, state: FSMContext):
+    try:
+        city = get_city_info(message.text)['components']['city']
+    except KeyError:
+        await message.answer(lang[database.get_language(message)]['city_not_recognized'])
+        return
+
+    data = await state.get_data()
+    date = data['user_date']
+    if city is not None:
+        database.update_natal_data(message, date)
+        database.update_natal_city(message, city)
+        database_temp.check_entry(message.from_user.id)
+        await bot.send_message(message.chat.id, lang[database.get_language(message)]['city_end_message'])
+        await bot.send_message(message.chat.id, lang[database.get_language(message)]['question_start'](message))
+        await Register.input_question.set()
+        await state.update_data(check='False')
+        await asyncio.sleep(90)
+        await check_time(message, state)
+
+
 def register_handlers_client(dp: Dispatcher):
     dp.register_message_handler(welcome, commands=['start', 'help'], state='*')
     dp.register_message_handler(about_olivia, commands=['intro'], state='*')
     dp.register_message_handler(join, commands=['join'], state='*')
-    # dp.register_message_handler(payment, commands=['payment'], state='*')
+    dp.register_message_handler(payment, commands=['payment'], state='*')
     dp.register_message_handler(change_language, commands=['language'], state='*')
     dp.register_message_handler(get_name, state=Register.input_name)
     dp.register_message_handler(get_question, state=Register.input_question)
@@ -271,3 +321,6 @@ def register_handlers_client(dp: Dispatcher):
                                 state=Session.get_card)
     dp.register_message_handler(thanks, Text(equals=all_lang['thx']), state=Session.session)
     dp.register_message_handler(after_session, Text(equals=all_lang['after_session']))
+    dp.register_message_handler(after_session, Text(equals=all_lang['after_session']))
+    dp.register_message_handler(after_session, Text(equals=all_lang['after_session']))
+    dp.register_message_handler(get_location, state=Register.input_location)

@@ -28,7 +28,9 @@ desired_columns = {
     ],
     "users": [
         ("phone_number", "TEXT", "DEFAULT 'None'"),
-        ("username", "TEXT", "DEFAULT 'None'")
+        ("username", "TEXT", "DEFAULT 'None'"),
+        ("natal_data", "TEXT", "DEFAULT 'None'"),
+        ("natal_city", "TEXT", "DEFAULT 'None'")
     ],
     "web3_addresses": [
         ("bitcoin", "TEXT", "DEFAULT None"),

@@ -4,6 +4,8 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 class Register(StatesGroup):
     input_name = State()
     input_question = State()
+    input_date = State()
+    input_location = State()
 
 
 class Session(StatesGroup):

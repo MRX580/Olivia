@@ -23,7 +23,7 @@ async def get_log(message: types.Message):
 
 async def get_kpi(message: types.Message):
     today_opened = users.get_all_users_for_today()
-    all_users = users.get_all_users()
+    all_users = users.get_len_all_users()
     all_history = users.get_all_history()
     all_active_users = users.get_active_users_for_today()
     all_thanks = users.get_all_thanks()

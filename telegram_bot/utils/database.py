@@ -3,7 +3,7 @@ import asyncio
 import json
 
 from datetime import datetime, date
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, Update
 from amplitude import Amplitude, BaseEvent
 
 amplitude = Amplitude("bbdc22a8304dbf12f2aaff6cd40fbdd3")
@@ -15,7 +15,7 @@ class Database:
     cur.execute('CREATE TABLE IF NOT EXISTS users (id INTEGER NOT NULL PRIMARY KEY, user_id INT, first_name TEXT, '
                 'name TEXT, energy INT, language TEXT, '
                 'attempts_used INT, last_attempt DATETIME, is_first_try BOOL, join_at datetime, phone_number TEXT, '
-                'username TEXT);')
+                'username TEXT, natal_data TEXT, natal_city);')
 
     cur.execute('CREATE TABLE IF NOT EXISTS fortune (id INTEGER NOT NULL PRIMARY KEY, user_id INT, first_name TEXT, '
                 'card_type TEXT, answer TEXT, type_fortune TEXT, '
@@ -36,6 +36,8 @@ class Database:
     cur.execute('CREATE TABLE IF NOT EXISTS decks(ru TEXT, en TEXT, reversed BOOL);')
 
     cur.execute('CREATE TABLE IF NOT EXISTS web3_addresses(user_id INT, bitcoin TEXT, ethereum TEXT, ripple TEXT);')
+
+    cur.execute('CREATE TABLE IF NOT EXISTS temp_data(user_id INT, birth_request_sent BOOL);')
 
     decks = cur.execute('SELECT * FROM decks').fetchone()
     if decks is None:
@@ -89,15 +91,23 @@ class User(Database):
         tg_user = tg_user.from_user
         time = datetime.now()
         self.cur.execute('INSERT INTO users(user_id, first_name, name, energy, language, attempts_used, last_attempt, '
-                         'is_first_try, join_at, phone_number, username) '
-                         'VALUES(?,?,?,?,?,?,?,?,?,?,?)',
+                         'is_first_try, join_at, phone_number, username, natal_data, natal_city) '
+                         'VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)',
                          (tg_user.id, tg_user.first_name, '', 100, 'ru', 0, time, False, time,
-                          contact.phone_number if contact is not None else None, tg_user.username))
-        self.cur.execute(f'UPDATE olivia SET max_energy = {self.get_all_users() * 3}')
+                          contact.phone_number if contact is not None else None, tg_user.username, None, None))
+        self.cur.execute(f'UPDATE olivia SET max_energy = {self.get_len_all_users() * 3}')
         self.conn.commit()
 
     def update_name(self, tg_user: Message):
         self.cur.execute(f'UPDATE users SET name = "{tg_user.text}" WHERE user_id = {tg_user.from_user.id}')
+        self.conn.commit()
+
+    def update_natal_data(self, tg_user: Message, natal_data):
+        self.cur.execute(f'UPDATE users SET natal_data = "{natal_data}" WHERE user_id = {tg_user.from_user.id}')
+        self.conn.commit()
+
+    def update_natal_city(self, tg_user: Message, natal_city):
+        self.cur.execute(f'UPDATE users SET natal_city = "{natal_city}" WHERE user_id = {tg_user.from_user.id}')
         self.conn.commit()
 
     def switch_language(self, language: str,
@@ -119,13 +129,18 @@ class User(Database):
     def get_data_history_back(self):
         return [i[0]+'_back' for i in self.cur.execute('SELECT create_at FROM history').fetchall()]
 
-    def get_all_users(self):
+    def get_len_all_users(self):
         return len(self.cur.execute(f'SELECT * FROM users').fetchall())
+
+    def get_all_users(self):
+        return self.cur.execute(f'SELECT * FROM users').fetchall()
 
     def get_olivia_energy(self):
         return self.cur.execute(f'SELECT energy FROM olivia').fetchone()[0]
 
     def get_language(self, tg_user: CallbackQuery or Message):
+        if type(tg_user) == Update:
+            tg_user = tg_user.message
         return self.cur.execute(f'SELECT language FROM users WHERE user_id = {tg_user.from_user.id}').fetchone()[0]
 
     def get_opened_cards(self, tg_user: CallbackQuery or Message):
@@ -307,4 +322,13 @@ class Web3(Database):
         return True
 
 
+class Temp(Database):
+
+    def check_entry(self, user_id):
+        self.cur.execute('INSERT INTO temp_data(user_id, birth_request_sent) VALUES(?,?)', (user_id, True))
+        self.conn.commit()
+
+    def get_birth_status(self, user_id) -> bool:
+        result = self.cur.execute(f'SELECT birth_request_sent FROM temp_data WHERE user_id = {user_id}')
+        return result.fetchone()
 

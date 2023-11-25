@@ -1,14 +1,21 @@
+from datetime import datetime, timedelta
+
 import aiogram.utils.exceptions
 from aiogram import types, Dispatcher
 from aiogram.dispatcher import FSMContext
 
 from telegram_bot.create_bot import dp, bot
 from telegram_bot.keyboards.inline_keyboard import Kb
+from telegram_bot.keyboards.utils import h_m_keyboard
 from telegram_bot.utils.database import User, Fortune, Decks, Web3
 from telegram_bot.utils.languages import lang
+from telegram_bot.states.main import Register
 from telegram_bot.utils.logging_system import logging_to_file
 from telegram_bot.utils.auto_creating_adress import BitcoinAddress, RippleAddress, EthereumAddress
 from telegram_bot.states.main import Session
+
+from aiogram_calendar import DialogCalendar, dialog_cal_callback
+from aiogram_timepicker import carousel
 
 database = User()
 database_fortune = Fortune()
@@ -132,6 +139,58 @@ async def create_ripple_address(call: types.CallbackQuery, state: FSMContext):
     await create_crypto_address(call, state, ripple_manager, 'Ripple')
 
 
+async def process_dialog_calendar(callback_query: types.CallbackQuery, callback_data: dict, state: FSMContext):
+    selected, date = await DialogCalendar(language=database.get_language(callback_query)).process_selection(callback_query, callback_data) # date.strftime("%d/%m/%Y")
+    if selected:
+        await callback_query.message.answer(
+            lang[database.get_language(callback_query)]['get_date_process'],
+            reply_markup=h_m_keyboard()
+        )
+        await bot.delete_message(callback_query.message.chat.id, callback_query.message.message_id)
+
+        await state.update_data(user_dateYMD=date.strftime("%Y-%m-%d"), user_dateHM="12:0")
+
+
+async def process_full_my_timepicker(callback_query: types.CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    hour = data.get('hour', 12)
+    minute = data.get('minute', 0)
+
+    actions = {'plus_h': 1, 'minus_h': -1, 'plus_m': 3, 'minus_m': -3}
+    action = actions.get(callback_query.data)
+
+    if action:
+        if 'h' in callback_query.data:
+            hour += action
+            hour = 1 if hour > 24 else 24 if hour < 1 else hour
+        else:
+            minute += action
+            minute = (minute + 60) % 60 if minute < 0 else minute % 60
+
+    await callback_query.message.edit_reply_markup(h_m_keyboard(hour, minute))
+    await state.update_data(hour=hour, minute=minute, user_dateHM=f"{hour}:{minute}")
+
+
+async def result_full_my_timepicker(callback_query: types.CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    result_dataYMD = data['user_dateYMD']
+    result_dataHM = data['user_dateHM']
+    date_obj = datetime.strptime(result_dataYMD, "%Y-%m-%d")
+    time_obj = datetime.strptime(result_dataHM, "%H:%M")
+
+    full_date = datetime.combine(date_obj, time_obj.time())
+
+    await state.update_data(user_date=full_date)
+    await callback_query.message.answer(
+        lang[database.get_language(callback_query)]['get_location_start'](full_date),
+    )
+    await callback_query.message.delete()
+    state = dp.current_state()
+    await state.set_state('input_location')
+    await Register.input_location.set()
+
+
+
 def register_handlers_callback(dp: Dispatcher):
     dp.register_callback_query_handler(switch_language, text=['switch english', 'switch russian', 'switch english_command',
                                                               'switch russian_command'], state='*')
@@ -142,3 +201,6 @@ def register_handlers_callback(dp: Dispatcher):
     dp.register_callback_query_handler(create_ripple_address, text=['ripple_address'], state='*')
     dp.register_callback_query_handler(add_reaction, text=['like reaction', 'dislike reaction'],
                                        state=[Session.session, Session.session_3_cards])
+    dp.register_callback_query_handler(process_dialog_calendar, dialog_cal_callback.filter(), state='*')
+    dp.register_callback_query_handler(process_full_my_timepicker, text=['plus_h', 'plus_m', 'minus_h', 'minus_m'], state='*')
+    dp.register_callback_query_handler(result_full_my_timepicker, text=['select_h_m'], state='*')
