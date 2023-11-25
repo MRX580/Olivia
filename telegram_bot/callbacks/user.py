@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timedelta
 
 import aiogram.utils.exceptions
@@ -180,7 +181,7 @@ async def result_full_my_timepicker(callback_query: types.CallbackQuery, state: 
 
     full_date = datetime.combine(date_obj, time_obj.time())
 
-    await state.update_data(user_date=full_date)
+    await state.update_data(user_date=json.dumps(full_date, default=str))
     await callback_query.message.answer(
         lang[database.get_language(callback_query)]['get_location_start'](full_date),
     )
