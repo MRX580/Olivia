@@ -99,7 +99,7 @@ I’m here to let my community know when something is going wrong and then direc
         'get_date_start': 'Hello! It would be great to know more about you! Please share your date of birth and place so that I can tell you what planet you are. Select year, month and day',
         'get_date_process': 'Now select the hour and minute',
         'get_location_start': lambda date: f'Date: {date}\nWhat city were you born in ?',
-        'city_not_recognized ': 'Unable to recognize the city',
+        'city_not_recognized': 'Unable to recognize the city',
         'city_end_message': 'Thank you for trusting me, now tell me what bothers you today?',
     },
 
@@ -197,7 +197,7 @@ I’m here to let my community know when something is going wrong and then direc
         'get_date_start': 'Привет! Было бы здорово узнать о тебе больше! Поделись, пожалуйста, своей датой рождения и местом, чтобы я могла сказать тебе, какая ты планета. Выбери год, месяц и день',
         'get_date_process': 'Теперь выберите час и минуту',
         'get_location_start': lambda date: f'Дата: {date}\nВ каком городе ты народился ?',
-        'city_not_recognized ': 'Не удалось распознать город',
+        'city_not_recognized': 'Не удалось распознать город',
         'city_end_message': 'Спасибо что доверились мне, теперь расскажите, что вас беспокоит сегодня?',
     }
 }
