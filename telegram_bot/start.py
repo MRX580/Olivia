@@ -1,5 +1,8 @@
 import asyncio
 import datetime
+
+import aiogram.utils.exceptions
+
 from handlers import user, fortunes, admin, channels
 from callbacks.user import register_handlers_callback
 from aiogram import executor
@@ -42,12 +45,15 @@ async def send_kpi():
 
 async def get_date_from_users():
     users = database_user.get_all_users()
-    for i in users:
-        is_birth = database_temp.get_birth_status(i[1])
-        if is_birth is None:
-            await bot.send_message(i[1], lang[i[5]]['get_date_start'],
-                                   reply_markup=await DialogCalendar(language=i[5]).start_calendar(year=1995))
-            database_temp.check_entry(i[1], False)
+    try:
+        for i in users:
+            is_birth = database_temp.get_birth_status(i[1])
+            if is_birth is None:
+                await bot.send_message(i[1], lang[i[5]]['get_date_start'],
+                                       reply_markup=await DialogCalendar(language=i[5]).start_calendar(year=1995))
+                database_temp.check_entry(i[1], False)
+    except aiogram.utils.exceptions.BotBlocked:
+        pass
 
 
 async def plus_energy(dp):
