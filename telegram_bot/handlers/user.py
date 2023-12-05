@@ -118,6 +118,7 @@ async def get_name(message: types.Message, state: FSMContext):
     database.update_name(message)
     await bot.send_message(message.chat.id, lang[database.get_language(message)]['get_date_start'],
                            reply_markup=await DialogCalendar(language=database.get_language(message)).start_calendar(year=1995))
+    database_temp.check_entry(message.chat.id, False)
     # await bot.send_message(message.chat.id, lang[database.get_language(message)]['question_start'](message))
     # await Register.input_question.set()
     # await state.update_data(check='False')

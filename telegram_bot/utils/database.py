@@ -3,6 +3,8 @@ import asyncio
 import json
 
 from datetime import datetime, date
+from typing import Union
+
 from aiogram.types import Message, CallbackQuery, Update
 from amplitude import Amplitude, BaseEvent
 
@@ -324,11 +326,15 @@ class Web3(Database):
 
 class Temp(Database):
 
-    def check_entry(self, user_id):
-        self.cur.execute('INSERT INTO temp_data(user_id, birth_request_sent) VALUES(?,?)', (user_id, True))
+    def check_entry(self, user_id, value=True):
+        self.cur.execute('INSERT INTO temp_data(user_id, birth_request_sent) VALUES(?,?)', (user_id, value))
         self.conn.commit()
 
-    def get_birth_status(self, user_id) -> bool:
+    def get_birth_status(self, user_id) -> Union[None, bool]:
         result = self.cur.execute(f'SELECT birth_request_sent FROM temp_data WHERE user_id = {user_id}')
-        return result.fetchone()
+        result = result.fetchone()
+
+        if result is None:
+            return None
+        return result[0]
 
