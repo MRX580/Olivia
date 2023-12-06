@@ -51,7 +51,7 @@ async def get_date_from_users():
             try:
                 await bot.send_message(i[1], lang[i[5]]['get_date_start'],
                                        reply_markup=await DialogCalendar(language=i[5]).start_calendar(year=1995))
-                database_temp.check_entry(i[1], False)
+                database_temp.insert_birth_status(i[1], False)
             except (aiogram.utils.exceptions.BotBlocked, aiogram.utils.exceptions.UserDeactivated):
                 pass
 
