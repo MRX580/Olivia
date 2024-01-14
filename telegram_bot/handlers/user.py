@@ -298,9 +298,12 @@ async def get_location(message: types.Message, state: FSMContext):
     data = await state.get_data()
     date = data['user_date']
     if city is not None:
-        database.update_natal_data(message, date)
-        database.update_natal_city(message, city)
-        database_temp.check_entry(message.from_user.id)
+        try:
+            database.update_natal_data(message, date)
+            database.update_natal_city(message, city)
+            database_temp.check_entry(message.from_user.id)
+        except Exception as e:
+            print(e)
         await bot.send_message(message.chat.id, lang[database.get_language(message)]['city_end_message'])
         await bot.send_message(message.chat.id, lang[database.get_language(message)]['question_start'](message))
         await Register.input_question.set()
