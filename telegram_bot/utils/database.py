@@ -69,6 +69,7 @@ class Database:
             value_users = len(self.cur.execute('SELECT * FROM users').fetchall()[0])
             amplitude.track(BaseEvent(event_type='PingUsers', user_id='currently_users',
                                       event_properties={'currently_users': value_users}))
+            self.conn.commit()
 
     def convert_time(self, time: str):
         data = time[:-7].replace('-', ':').replace(' ', ':').split(':')
