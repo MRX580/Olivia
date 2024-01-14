@@ -2,391 +2,391 @@
   [
     "Шут",
     "The Fool",
-    false
+    0
   ],
   [
     "Маг",
     "The Magician",
-    false
+    0
   ],
   [
     "Жрица",
     "The High Priestess",
-    false
+    0
   ],
   [
     "Императрица",
     "The Empress",
-    false
+    0
   ],
   [
     "Император",
     "The Emperor",
-    false
+    0
   ],
   [
     "Жрец",
     "The Hierophant",
-    false
+    0
   ],
   [
     "Влюбленные",
     "The Lovers",
-    false
+    0
   ],
   [
     "Колесница",
     "The Chariot",
-    false
+    0
   ],
   [
     "Сила",
     "Strength",
-    false
+    0
   ],
   [
     "Отшельник",
     "The Hermit",
-    false
+    0
   ],
   [
     "Колесо Фортуны",
     "Wheel of Fortune",
-    false
+    0
   ],
   [
     "Справедливость",
     "Justice",
-    false
+    0
   ],
   [
     "Повешенный",
     "The Hanged Man",
-    false
+    0
   ],
   [
     "Смерть",
     "Death",
-    false
+    0
   ],
   [
     "Умеренность",
     "Temperance",
-    false
+    0
   ],
   [
     "Дьявол",
     "The Devil",
-    false
+    0
   ],
   [
     "Башня",
     "The Tower",
-    false
+    0
   ],
   [
     "Звезда",
     "The Star",
-    false
+    0
   ],
   [
     "Луна",
     "The Moon",
-    false
+    0
   ],
   [
     "Солнце",
     "The Sun",
-    false
+    0
   ],
   [
     "Суд",
     "Judgement",
-    false
+    0
   ],
   [
     "Мир",
     "The World",
-    false
+    0
   ],
   [
     "Туз Жезлов",
     "Ace of Wands",
-    false
+    0
   ],
   [
     "Двойка Жезлов",
     "Two of Wands",
-    false
+    0
   ],
   [
     "Тройка Жезлов",
     "Three of Wands",
-    false
+    0
   ],
   [
     "Четверка Жезлов",
     "Four of Wands",
-    false
+    0
   ],
   [
     "Пятерка Жезлов",
     "Five of Wands",
-    false
+    0
   ],
   [
     "Шестерка Жезлов",
     "Six of Wands",
-    false
+    0
   ],
   [
     "Семерка Жезлов",
     "Seven of Wands",
-    false
+    0
   ],
   [
     "Восьмерка Жезлов",
     "Eight of Wands",
-    false
+    0
   ],
   [
     "Девятка Жезлов",
     "Nine of Wands",
-    false
+    0
   ],
   [
     "Десятка Жезлов",
     "Ten of Wands",
-    false
+    0
   ],
   [
     "Паж Жезлов",
     "Page of Wands",
-    false
+    0
   ],
   [
     "Рыцарь Жезлов",
     "Knight of Wands",
-    false
+    0
   ],
   [
     "Дама Жезлов",
     "Queen of Wands",
-    false
+    0
   ],
   [
     "Король Жезлов",
     "King of Wands",
-    false
+    0
   ],
   [
     "Туз Чаш",
     "Ace of Cups",
-    false
+    0
   ],
   [
     "Двойка Чаш",
     "Two of Cups",
-    false
+    0
   ],
   [
     "Тройка Чаш",
     "Three of Cups",
-    false
+    0
   ],
   [
     "Четверка Чаш",
     "Four of Cups",
-    false
+    0
   ],
   [
     "Пятерка Чаш",
     "Five of Cups",
-    false
+    0
   ],
   [
     "Шестерка Чаш",
     "Six of Cups",
-    false
+    0
   ],
   [
     "Семерка Чаш",
     "Seven of Cups",
-    false
+    0
   ],
   [
     "Восьмерка Чаш",
     "Eight of Cups",
-    false
+    0
   ],
   [
     "Девятка Чаш",
     "Nine of Cups",
-    false
+    0
   ],
   [
     "Десятка Чаш",
     "Ten of Cups",
-    false
+    0
   ],
   [
     "Паж Чаш",
     "Page of Cups",
-    false
+    0
   ],
   [
     "Рыцарь Чаш",
     "Knight of Cups",
-    false
+    0
   ],
   [
     "Дама Чаш",
     "Queen of Cups",
-    false
+    0
   ],
   [
     "Король Чаш",
     "King of Cups",
-    false
+    0
   ],
   [
     "Туз Мечей",
     "Ace of Swords",
-    false
+    0
   ],
   [
     "Двойка Мечей",
     "Two of Swords",
-    false
+    0
   ],
   [
     "Тройка Мечей",
     "Three of Swords",
-    false
+    0
   ],
   [
     "Четверка Мечей",
     "Four of Swords",
-    false
+    0
   ],
   [
     "Пятерка Мечей",
     "Five of Swords",
-    false
+    0
   ],
   [
     "Шестерка Мечей",
     "Six of Swords",
-    false
+    0
   ],
   [
     "Семерка Мечей",
     "Seven of Swords",
-    false
+    0
   ],
   [
     "Восьмерка Мечей",
     "Eight of Swords",
-    false
+    0
   ],
   [
     "Девятка Мечей",
     "Nine of Swords",
-    false
+    0
   ],
   [
     "Десятка Мечей",
     "Ten of Swords",
-    false
+    0
   ],
   [
     "Паж Мечей",
     "Page of Swords",
-    false
+    0
   ],
   [
     "Рыцарь Мечей",
     "Knight of Swords",
-    false
+    0
   ],
   [
     "Дама Мечей",
     "Queen of Swords",
-    false
+    0
   ],
   [
     "Король Мечей",
     "King of Swords",
-    false
+    0
   ],
   [
     "Туз Пентаклей",
     "Ace of Pentacles",
-    false
+    0
   ],
   [
     "Двойка Пентаклей",
     "Two of Pentacles",
-    false
+    0
   ],
   [
     "Тройка Пентаклей",
     "Three of Pentacles",
-    false
+    0
   ],
   [
     "Четверка Пентаклей",
     "Four of Pentacles",
-    false
+    0
   ],
   [
     "Пятерка Пентаклей",
     "Five of Pentacles",
-    false
+    0
   ],
   [
     "Шестерка Пентаклей",
     "Six of Pentacles",
-    false
+    0
   ],
   [
     "Семерка Пентаклей",
     "Seven of Pentacles",
-    false
+    0
   ],
   [
     "Восьмерка Пентаклей",
     "Eight of Pentacles",
-    false
+    0
   ],
   [
     "Девятка Пентаклей",
     "Nine of Pentacles",
-    false
+    0
   ],
   [
     "Десятка Пентаклей",
     "Ten of Pentacles",
-    false
+    0
   ],
   [
     "Паж Пентаклей",
     "Page of Pentacles",
-    false
+    0
   ],
   [
     "Рыцарь Пентаклей",
     "Knight of Pentacles",
-    false
+    0
   ],
   [
     "Дама Пентаклей",
     "Queen of Pentacles",
-    false
+    0
   ],
   [
     "Король Пентаклей",
     "King of Pentacles",
-    false
+    0
   ]
 ]

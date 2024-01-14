@@ -52,12 +52,9 @@ async def welcome(message: types.Message, state: FSMContext):
         await Session.session.set()
     else:
         await Register.input_name.set()
-        state = dp.current_state()
-        await state.set_state('input_name')
         database.create_user(message)
         await bot.send_message(message.chat.id, 'Всегда рада новому гостю. Вам тут рады. Как я могу называть Вас, '
                                                 'гость?🦄', reply_markup=Kb.LANGUAGES)
-
 
 
 async def divination(message: types.Message):
@@ -121,7 +118,12 @@ async def get_name(message: types.Message, state: FSMContext):
     database.update_name(message)
     await bot.send_message(message.chat.id, lang[database.get_language(message)]['get_date_start'],
                            reply_markup=await DialogCalendar(language=database.get_language(message)).start_calendar(year=1995))
-    database_temp.insert_birth_status(message.chat.id, False)
+    database_temp.check_entry(message.chat.id, False)
+    # await bot.send_message(message.chat.id, lang[database.get_language(message)]['question_start'](message))
+    # await Register.input_question.set()
+    # await state.update_data(check='False')
+    # await asyncio.sleep(90)
+    # await check_time(message, state)
 
 
 async def thanks(message: types.Message, state: FSMContext):
@@ -298,7 +300,7 @@ async def get_location(message: types.Message, state: FSMContext):
     if city is not None:
         database.update_natal_data(message, date)
         database.update_natal_city(message, city)
-        database_temp.update_birth_status(message.from_user.id)
+        database_temp.check_entry(message.from_user.id)
         await bot.send_message(message.chat.id, lang[database.get_language(message)]['city_end_message'])
         await bot.send_message(message.chat.id, lang[database.get_language(message)]['question_start'](message))
         await Register.input_question.set()

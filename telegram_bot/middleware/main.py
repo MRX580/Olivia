@@ -25,7 +25,7 @@ class BirthRequestMiddleware(BaseMiddleware):
 
         is_birth = database_temp.get_birth_status(message.from_user.id)
         is_user = database.is_user_exists(message)
-        if not is_birth and not 'input_location' in state and is_user and not 'input_name' in state:
+        if not is_birth and not 'input_location' in state and is_user:
             # await message.answer(lang[database.get_language(message)]['not_confirmed_birth'])
             raise BirthRequestNotSent()
 

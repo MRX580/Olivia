@@ -9,4 +9,3 @@ requests~=2.31.0
 aiogram-calendar==0.1.1
 aiogram-timepicker==0.2.1
 kerykeion==4.2.4
-psycopg2==2.9.9
