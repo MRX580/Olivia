@@ -46,7 +46,7 @@ async def send_kpi():
 async def get_date_from_users():
     users = database_user.get_all_users()
     for i in users:
-        is_birth = database_temp.get_birth_status(i[1])
+        is_birth = await database_temp.get_birth_status(i[1])
         if is_birth is None:
             try:
                 await bot.send_message(i[1], lang[i[5]]['get_date_start'],
@@ -59,9 +59,9 @@ async def get_date_from_users():
 async def plus_energy(dp):
     asyncio.create_task(database.get_energy())
     asyncio.create_task(send_kpi())
-    asyncio.create_task(get_date_from_users())
     if CODE_MODE == 'PROD':
         asyncio.create_task(database.get_users_value())
+    await get_date_from_users()
 
 
 if __name__ == "__main__":

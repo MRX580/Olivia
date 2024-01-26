@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
 
 import aiogram.utils.exceptions
 from aiogram import types, Dispatcher
@@ -16,7 +16,6 @@ from telegram_bot.utils.auto_creating_adress import BitcoinAddress, RippleAddres
 from telegram_bot.states.main import Session
 
 from aiogram_calendar import DialogCalendar, dialog_cal_callback
-from aiogram_timepicker import carousel
 
 database = User()
 database_fortune = Fortune()

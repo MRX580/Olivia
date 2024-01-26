@@ -331,16 +331,23 @@ class Web3(Database):
 
 class Temp(Database):
 
-    def check_entry(self, user_id, value=True):
-        print('check')
-        self.cur.execute('INSERT INTO temp_data(user_id, birth_request_sent) VALUES(?,?)', (user_id, value))
-        self.conn.commit()
-        print('check', True)
+    def is_birth_exist(self, user_id):
+        user = self.cur.execute(f'SELECT * FROM users WHERE user_id = {user_id}').fetchone()
+        if user:
+            return True
+        return False
 
-    def get_birth_status(self, user_id) -> Union[None, bool]:
+    def check_entry(self, user_id, value=True):
+        if self.is_birth_exist(user_id):
+            self.cur.execute('UPDATE temp_data SET birth_request_sent = True WHERE user_id = (?)', (user_id,))
+            self.conn.commit()
+        else:
+            self.cur.execute('INSERT INTO temp_data(user_id, birth_request_sent) VALUES(?,?)', (user_id, value))
+            self.conn.commit()
+
+    async def get_birth_status(self, user_id) -> Union[None, bool]:
         result = self.cur.execute(f'SELECT birth_request_sent FROM temp_data WHERE user_id = {user_id}')
         result = result.fetchone()
-
         if result is None:
             return None
         return result[0]

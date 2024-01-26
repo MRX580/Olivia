@@ -1,6 +1,5 @@
 from aiogram import types
 from aiogram.contrib.middlewares.logging import LoggingMiddleware
-from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.middlewares import BaseMiddleware
 from aiogram.types.update import Update
 from aiogram_calendar import DialogCalendar
@@ -8,7 +7,6 @@ from aiogram_calendar import DialogCalendar
 from telegram_bot.utils.database import Temp, User
 from telegram_bot.utils.languages import lang
 from telegram_bot.create_bot import dp
-from telegram_bot.states.main import Register
 
 database = User()
 database_temp = Temp()
@@ -23,11 +21,12 @@ class BirthRequestMiddleware(BaseMiddleware):
         if state is None:
             state = ''
 
-        is_birth = database_temp.get_birth_status(message.from_user.id)
         is_user = database.is_user_exists(message)
-        if not is_birth and not 'input_location' in state and is_user:
-            # await message.answer(lang[database.get_language(message)]['not_confirmed_birth'])
-            raise BirthRequestNotSent()
+        if not 'input_location' in state and is_user:
+            is_birth = await database_temp.get_birth_status(message.from_user.id)
+            if not is_birth:
+                # await message.answer(lang[database.get_language(message)]['not_confirmed_birth'])
+                raise BirthRequestNotSent()
 
 
 class BirthRequestNotSent(Exception):
