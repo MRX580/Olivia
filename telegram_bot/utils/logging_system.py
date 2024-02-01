@@ -12,7 +12,7 @@ class TelegramLogsHandler(logging.Handler):
 
     def emit(self, record):
         log_entry = self.format(record)
-        asyncio.run(self.bot.send_message(chat_id=self.chat_id, text=log_entry))
+        asyncio.create_task(self.bot.send_message(chat_id=self.chat_id, text=log_entry))
 
 
 def logging_to_file_telegram(log_type, *args):
