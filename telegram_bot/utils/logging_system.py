@@ -15,7 +15,7 @@ class TelegramLogsHandler(logging.Handler):
         asyncio.create_task(self.bot.send_message(chat_id=self.chat_id, text=log_entry))
 
 
-def logging_to_file(log_type, *args):
+def logging_to_file_telegram(log_type, *args):
     log_file = 'bot.log'
     logger = logging.getLogger(__name__)
 
