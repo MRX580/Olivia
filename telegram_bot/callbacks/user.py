@@ -11,7 +11,7 @@ from telegram_bot.keyboards.utils import h_m_keyboard
 from telegram_bot.utils.database import User, Fortune, Decks, Web3
 from telegram_bot.utils.languages import lang
 from telegram_bot.states.main import Register
-from telegram_bot.utils.logging_system import logging_to_file
+from telegram_bot.utils.logging_system import logging_to_file_telegram
 from telegram_bot.utils.auto_creating_adress import BitcoinAddress, RippleAddress, EthereumAddress
 from telegram_bot.states.main import Session
 
@@ -29,22 +29,22 @@ DIR_TXT_GENERAL = 'static/text/general/day_card'
 async def switch_language(call: types.CallbackQuery):
     try:
         if call.data == 'switch english':
-            logging_to_file('info', f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Смена языка на английский')
+            logging_to_file_telegram('info', f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Смена языка на английский')
             database.switch_language('en', call)
             await call.message.edit_text(lang[database.get_language(call)]['start'],
                                          reply_markup=Kb.LANGUAGES)
         elif call.data == 'switch russian':
-            logging_to_file('info', f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Смена языка на русский')
+            logging_to_file_telegram('info', f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Смена языка на русский')
             database.switch_language('ru', call)
             await call.message.edit_text(lang[database.get_language(call)]['start'],
                                          reply_markup=Kb.LANGUAGES)
         elif call.data == 'switch english_command':
-            logging_to_file('info', f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Смена языка на английский command')
+            logging_to_file_telegram('info', f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Смена языка на английский command')
             database.switch_language('en', call)
             await call.message.edit_text(lang[database.get_language(call)]['choose_language'],
                                          reply_markup=Kb.LANGUAGES_COMMAND(call))
         elif call.data == 'switch russian_command':
-            logging_to_file('info', f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Смена языка на русский command')
+            logging_to_file_telegram('info', f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Смена языка на русский command')
             database.switch_language('ru', call)
             await call.message.edit_text(lang[database.get_language(call)]['choose_language'],
                                          reply_markup=Kb.LANGUAGES_COMMAND(call))
@@ -55,7 +55,7 @@ async def switch_language(call: types.CallbackQuery):
 
 async def full_text(call: types.CallbackQuery, state: FSMContext):
     if call.data == 'full_text':
-        logging_to_file('info', f'[{call.from_user.id} | {call.from_user.first_name}] Callback: full_text')
+        logging_to_file_telegram('info', f'[{call.from_user.id} | {call.from_user.first_name}] Callback: full_text')
         data = await state.get_data()
         text = data['text_data']
         if len(text) > 4096:
@@ -98,10 +98,10 @@ async def add_reaction(call: types.CallbackQuery, state: FSMContext):
     state_data = await state.get_data()
     message_id = state_data['message_id']
     if call.data == 'like reaction':
-        logging_to_file('info', f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Понравилась интерпретация')
+        logging_to_file_telegram('info', f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Понравилась интерпретация')
         database_fortune.change_reaction('Like', message_id)
     elif call.data == 'dislike reaction':
-        logging_to_file('info', f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Не понравилась интерпретация')
+        logging_to_file_telegram('info', f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Не понравилась интерпретация')
         database_fortune.change_reaction('Dislike', message_id)
         
 

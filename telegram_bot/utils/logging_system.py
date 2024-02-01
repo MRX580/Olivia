@@ -1,20 +1,37 @@
 import logging
+from logging.handlers import TimedRotatingFileHandler
+from telegram_bot.create_bot import bot
+import asyncio
 
 
-def logging_to_file(log_type, *args):
-    log_file = 'bot.log'  # Имя файла для записи логов
+class TelegramLogsHandler(logging.Handler):
+    def __init__(self, chat_id):
+        super().__init__()
+        self.bot = bot
+        self.chat_id = chat_id
 
-    # Сопоставление типов логов и уровней логирования
+    def emit(self, record):
+        log_entry = self.format(record)
+        asyncio.run(self.bot.send_message(chat_id=self.chat_id, text=log_entry))
+
+
+def logging_to_file_telegram(log_type, *args):
+    log_file = 'bot.log'
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)
+
     log_levels = {'warn': logging.WARNING, 'info': logging.INFO, 'error': logging.ERROR}
 
-    # Проверяем, что переданный тип лога допустим
     if log_type not in log_levels:
         raise ValueError("Недопустимый тип лога: должен быть 'warn', 'info' или 'error'.")
 
-    # Конфигурируем логирование
-    logging.basicConfig(filename=log_file, level=log_levels[log_type],
-                               format='%(asctime)s - %(levelname)s - %(message)s', encoding='utf-8')
+    file_handler = TimedRotatingFileHandler(log_file, when="midnight", interval=1, encoding='utf-8')
+    file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+    logger.addHandler(file_handler)
 
-    # Записываем логи
+    telegram_handler = TelegramLogsHandler(-4180190396)  # Используйте свой chat_id
+    logger.addHandler(telegram_handler)
+
     for message in args:
-        logging.log(log_levels[log_type], message)
+        logger.log(log_levels[log_type], message)
+

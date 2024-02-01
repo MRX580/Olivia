@@ -16,7 +16,7 @@ from telegram_bot.create_bot import bot, CODE_MODE
 from telegram_bot.keyboards.reply_keyboard import KbReply
 from telegram_bot.utils.database import User, Fortune, Decks
 from telegram_bot.utils.languages import lang, all_lang
-from telegram_bot.utils.logging_system import logging_to_file
+from telegram_bot.utils.logging_system import logging_to_file_telegram
 from telegram_bot.utils.decks import decks
 from telegram_bot.handlers.user import Session, Register, check_time, close_session_with_delay
 from amplitude import BaseEvent
@@ -116,7 +116,7 @@ async def get_card(message: types.Message, state: FSMContext, extra_keyboard=Fal
     card = os.listdir(DIR_IMG)[rand_card][:-4]
     card_name = decks[card][lang_user]
     path_img = os.path.join(DIR_IMG, f'{card}.jpg')
-    logging_to_file('info', f'[{message.from_user.id} | {message.from_user.first_name}] card: {card_name} | reverse: {bool(is_card_reversed(lang_user, card_name))} |'
+    logging_to_file_telegram('info', f'[{message.from_user.id} | {message.from_user.first_name}] card: {card_name} | reverse: {bool(is_card_reversed(lang_user, card_name))} |'
         f' lang_user: {lang_user} | card: {card}\npath_img - {path_img}')
     buffer = process_reversed_card_img(message, path_img, card_name)
     interpretation_text = await generate_chatgpt_text_and_send_animation(state, message, card_name)
@@ -194,7 +194,7 @@ async def handle_random_card_update(message, card, card_name):
 async def get_fortune_three_cards(message: types.Message, state: FSMContext):
     if CODE_MODE == 'PROD':
         amplitude.track(BaseEvent(event_type='PSF', user_id=f'{message.from_user.id}'))
-    logging_to_file('info', f'[{message.from_user.id} | {message.from_user.first_name}] Callback: get_3_cards')
+    logging_to_file_telegram('info', f'[{message.from_user.id} | {message.from_user.first_name}] Callback: get_3_cards')
     await bot.send_photo(message.chat.id, open('static/img/static/past_present_future.jpg', 'rb'))
     await state.update_data(past=False, present=False, future=False)
     await bot.send_message(message.chat.id, lang[database.get_language(message)]['open_cards'],
@@ -205,7 +205,7 @@ async def get_fortune_three_cards(message: types.Message, state: FSMContext):
 async def get_fortune_one_cards(message: types.Message, state: FSMContext):
     if CODE_MODE == 'PROD':
         amplitude.track(BaseEvent(event_type='OneCard', user_id=f'{message.from_user.id}'))
-    logging_to_file('info', f'[{message.from_user.id} | {message.from_user.first_name}] Callback: one_card')
+    logging_to_file_telegram('info', f'[{message.from_user.id} | {message.from_user.first_name}] Callback: one_card')
     await get_card(message, state)
     await update_energy_and_schedule_session_close(state, message)
 
@@ -213,7 +213,7 @@ async def get_fortune_one_cards(message: types.Message, state: FSMContext):
 async def get_fortune_chatgpt(message: types.Message, state: FSMContext):
     # if CODE_MODE == 'PROD':
     #     amplitude.track(BaseEvent(event_type='OneCard', user_id=f'{message.from_user.id}'))
-    logging_to_file('info', f'[{message.from_user.id} | {message.from_user.first_name}] Callback: chatgpt')
+    logging_to_file_telegram('info', f'[{message.from_user.id} | {message.from_user.first_name}] Callback: chatgpt')
     await get_card(message, state, mode='chatgpt')
     await update_energy_and_schedule_session_close(state, message)
 
