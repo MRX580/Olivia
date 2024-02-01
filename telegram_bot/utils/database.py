@@ -106,16 +106,12 @@ class User(Database):
         self.conn.commit()
 
     def update_natal_data(self, tg_user: Message, natal_data):
-        print(123)
         self.cur.execute(f'UPDATE users SET natal_data = {natal_data} WHERE user_id = {tg_user.from_user.id}')
         self.conn.commit()
-        print(123, True)
 
     def update_natal_city(self, tg_user: Message, natal_city):
-        print(321)
         self.cur.execute(f'UPDATE users SET natal_city = "{natal_city}" WHERE user_id = {tg_user.from_user.id}')
         self.conn.commit()
-        print(321, True)
 
     def switch_language(self, language: str,
                         tg_user: CallbackQuery or Message):
@@ -332,7 +328,7 @@ class Web3(Database):
 class Temp(Database):
 
     def is_birth_exist(self, user_id):
-        user = self.cur.execute(f'SELECT * FROM users WHERE user_id = {user_id}').fetchone()
+        user = self.cur.execute(f'SELECT birth_request_sent FROM temp_data WHERE user_id = {user_id}').fetchone()
         if user:
             return True
         return False
