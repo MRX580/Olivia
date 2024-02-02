@@ -16,7 +16,7 @@ class TelegramLogsHandler(logging.Handler):
 
 
 def logging_to_file_telegram(log_type, *args):
-    log_file = 'bot.log'
+    log_file = 'logs/bot.log'
     logger = logging.getLogger(__name__)
 
     # Словарь уровней логирования
@@ -30,7 +30,7 @@ def logging_to_file_telegram(log_type, *args):
         file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
         logger.addHandler(file_handler)
 
-        telegram_handler = TelegramLogsHandler(-4180190396)  # Используйте свой chat_id
+        telegram_handler = TelegramLogsHandler(-1001872975349)
         logger.addHandler(telegram_handler)
 
     # Проверка на допустимость типа лога
