@@ -29,22 +29,22 @@ DIR_TXT_GENERAL = 'static/text/general/day_card'
 async def switch_language(call: types.CallbackQuery):
     try:
         if call.data == 'switch english':
-            logging_to_file_telegram('info', f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Смена языка на английский')
+            logging_to_file_telegram('info', f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Смена языка на английский(регистрация)')
             database.switch_language('en', call)
             await call.message.edit_text(lang[database.get_language(call)]['start'],
                                          reply_markup=Kb.LANGUAGES)
         elif call.data == 'switch russian':
-            logging_to_file_telegram('info', f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Смена языка на русский')
+            logging_to_file_telegram('info', f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Смена языка на русский(регистрация)')
             database.switch_language('ru', call)
             await call.message.edit_text(lang[database.get_language(call)]['start'],
                                          reply_markup=Kb.LANGUAGES)
         elif call.data == 'switch english_command':
-            logging_to_file_telegram('info', f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Смена языка на английский command')
+            logging_to_file_telegram('info', f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Смена языка на английский(/language)')
             database.switch_language('en', call)
             await call.message.edit_text(lang[database.get_language(call)]['choose_language'],
                                          reply_markup=Kb.LANGUAGES_COMMAND(call))
         elif call.data == 'switch russian_command':
-            logging_to_file_telegram('info', f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Смена языка на русский command')
+            logging_to_file_telegram('info', f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Смена языка на русский(/language)')
             database.switch_language('ru', call)
             await call.message.edit_text(lang[database.get_language(call)]['choose_language'],
                                          reply_markup=Kb.LANGUAGES_COMMAND(call))
@@ -55,7 +55,7 @@ async def switch_language(call: types.CallbackQuery):
 
 async def full_text(call: types.CallbackQuery, state: FSMContext):
     if call.data == 'full_text':
-        logging_to_file_telegram('info', f'[{call.from_user.id} | {call.from_user.first_name}] Callback: full_text')
+        logging_to_file_telegram('info', f'[{call.from_user.id} | {call.from_user.first_name}] Callback: показать полный текст')
         data = await state.get_data()
         text = data['text_data']
         if len(text) > 4096:

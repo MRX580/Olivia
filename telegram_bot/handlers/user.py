@@ -76,13 +76,13 @@ async def close_session_with_delay(message: types.Message, state: FSMContext, ti
         time = convert_str_in_datetime(data['close_session'])
         if not data['thx']:
             if time + timedelta(hours=1) < datetime.now():
-                logging_to_file_telegram('info', f'[{message.from_user.id} | {message.from_user.first_name}] Callback: close_session_with_delay(thx)')
+                logging_to_file_telegram('info', f'[{message.from_user.id} | {message.from_user.first_name}] Callback: Сессия закрыта без "Спасибо"')
                 await bot.send_message(message.chat.id, lang[database.get_language(message)]['end_session'](message),
                                        reply_markup=KbReply.AFTER_END_SESSION(message))
                 await state.reset_state()
         else:
             if time + timedelta(minutes=5) < datetime.now():
-                logging_to_file_telegram('info', f'[{message.from_user.id} | {message.from_user.first_name}] Callback: close_session_with_delay')
+                logging_to_file_telegram('info', f'[{message.from_user.id} | {message.from_user.first_name}] Callback: Сессия закрыта с "Спасибо"')
                 await bot.send_message(message.chat.id, lang[database.get_language(message)]['end_session'](message),
                                        disable_notification=True,
                                        reply_markup=KbReply.AFTER_END_SESSION(message))
@@ -93,9 +93,10 @@ async def close_session_with_delay(message: types.Message, state: FSMContext, ti
 
 async def check_time(message: types.Message, state: FSMContext):
     data = await state.get_data()
-    logging_to_file_telegram('info', f'[{message.from_user.id} | {message.from_user.first_name}] Callback: check_time')
     try:
         if data['check'] == 'False':
+            logging_to_file_telegram('info',
+                                     f'[{message.from_user.id} | {message.from_user.first_name}] Callback: check_time | Карта открыта с вопросом')
             await bot.send_message(message.chat.id, lang[database.get_language(message)]['get_card'],
                                    reply_markup=KbReply.GET_CARD(message))
             data = await state.get_data('rand_card')
@@ -110,6 +111,8 @@ async def check_time(message: types.Message, state: FSMContext):
             await state.update_data(rand_card=rand_card, prompt=prompt, check='True', question=None)
             await Session.get_card.set()
     except KeyError:
+        logging_to_file_telegram('info',
+                                 f'[{message.from_user.id} | {message.from_user.first_name}] Callback: check_time | Карта открыта без вопроса')
         pass
 
 
@@ -127,7 +130,7 @@ async def get_name(message: types.Message, state: FSMContext):
 
 
 async def thanks(message: types.Message, state: FSMContext):
-    logging_to_file_telegram('info', f'[{message.from_user.id} | {message.from_user.first_name}] Callback: thx')
+    logging_to_file_telegram('info', f'[{message.from_user.id} | {message.from_user.first_name}] Callback: Нажато "Спасибо"')
     async with state.proxy() as data:
         if not data['thx']:
             if CODE_MODE == 'PROD':
@@ -147,7 +150,7 @@ async def thanks(message: types.Message, state: FSMContext):
 
 
 async def get_question(message: types.Message, state: FSMContext):
-    logging_to_file_telegram('info', f'[{message.from_user.id} | {message.from_user.first_name}] Написал {message.text}')
+    logging_to_file_telegram('info', f'[{message.from_user.id} | {message.from_user.first_name}] При получении вопроса написал:\n{message.text}')
     if CODE_MODE == 'PROD':
         amplitude.track(BaseEvent(event_type='UserQuestion', user_id=f'{message.from_user.id}',
                                   event_properties={'question': message.text}))
@@ -226,7 +229,7 @@ async def join(message: types.Message, state: FSMContext):
 
 
 async def listen_wisdom(message: types.Message, state: FSMContext):
-    logging_to_file_telegram('info', f'[{message.from_user.id} | {message.from_user.first_name}] Написал {message.text}')
+    logging_to_file_telegram('info', f'[{message.from_user.id} | {message.from_user.first_name}] Callback: listen_wisdom | Написал {message.text}')
     database_wisdom.add_wisdom(message, message.text)
     await bot.send_message(message.chat.id, lang[database.get_language(message)]['answer_feedback'](message))
     data = await state.get_data()  # Сделать проверку на сессию

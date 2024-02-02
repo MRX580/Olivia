@@ -205,7 +205,7 @@ async def get_fortune_three_cards(message: types.Message, state: FSMContext):
 async def get_fortune_one_cards(message: types.Message, state: FSMContext):
     if CODE_MODE == 'PROD':
         amplitude.track(BaseEvent(event_type='OneCard', user_id=f'{message.from_user.id}'))
-    logging_to_file_telegram('info', f'[{message.from_user.id} | {message.from_user.first_name}] Callback: one_card')
+    logging_to_file_telegram('info', f'[{message.from_user.id} | {message.from_user.first_name}] Callback: Посмотреть карту')
     await get_card(message, state)
     await update_energy_and_schedule_session_close(state, message)
 
