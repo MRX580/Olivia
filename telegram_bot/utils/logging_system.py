@@ -26,7 +26,7 @@ def logging_to_file_telegram(log_type, *args):
     if not logger.handlers:
         logger.setLevel(logging.INFO)
 
-        file_handler = TimedRotatingFileHandler(log_file, when="midnight", interval=1, encoding='utf-8')
+        file_handler = TimedRotatingFileHandler(log_file, when="midnight", interval=1, backupCount=7, encoding='utf-8')
         file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
         logger.addHandler(file_handler)
 

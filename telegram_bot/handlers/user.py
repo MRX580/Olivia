@@ -117,16 +117,11 @@ async def check_time(message: types.Message, state: FSMContext):
 
 
 async def get_name(message: types.Message, state: FSMContext):
-    logging_to_file_telegram('info', f'[{message.from_user.id} | {message.from_user.first_name}] Написал {message.text}')
+    logging_to_file_telegram('info', f'[{message.from_user.id} | {message.from_user.first_name}] Придумал себе имя "{message.text}" при регистрации')
     database.update_name(message)
     await bot.send_message(message.chat.id, lang[database.get_language(message)]['get_date_start'],
                            reply_markup=await DialogCalendar(language=database.get_language(message)).start_calendar(year=1995))
     database_temp.check_entry(message.chat.id, False)
-    # await bot.send_message(message.chat.id, lang[database.get_language(message)]['question_start'](message))
-    # await Register.input_question.set()
-    # await state.update_data(check='False')
-    # await asyncio.sleep(90)
-    # await check_time(message, state)
 
 
 async def thanks(message: types.Message, state: FSMContext):
@@ -305,6 +300,8 @@ async def get_location(message: types.Message, state: FSMContext):
             database.update_natal_data(message, date)
             database.update_natal_city(message, city)
             database_temp.check_entry(message.from_user.id)
+            logging_to_file_telegram('info',
+                                     f'[{message.from_user.id} | {message.from_user.first_name}] Заполнил натальные данные:\n{date}, {city} ')
         except Exception as e:
             print(e)
         await bot.send_message(message.chat.id, lang[database.get_language(message)]['city_end_message'])

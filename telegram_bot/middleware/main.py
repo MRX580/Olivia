@@ -20,12 +20,12 @@ class BirthRequestMiddleware(BaseMiddleware):
         state = await current_state.get_state()
         if state is None:
             state = ''
-
         is_user = database.is_user_exists(message)
-        if not 'input_location' in state and is_user:
+        if not 'input_location' in state and is_user:  # Если пользователь выбирает город, тоже не вызываем ошибку
+            if 'input_name' in state:  # Если пользователь вводит имя, не вызываем ошибку
+                return
             is_birth = await database_temp.get_birth_status(message.from_user.id)
-            if not is_birth:
-                # await message.answer(lang[database.get_language(message)]['not_confirmed_birth'])
+            if not is_birth:  # Если пользователь не ввёл свой день рождения/город вызываем ошибку
                 raise BirthRequestNotSent()
 
 
