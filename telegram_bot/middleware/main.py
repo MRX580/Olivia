@@ -16,17 +16,18 @@ dp.middleware.setup(LoggingMiddleware())
 
 class BirthRequestMiddleware(BaseMiddleware):
     async def on_pre_process_message(self, message: types.Message, data: dict):
-        current_state = dp.current_state(user=message.from_user.id)
-        state = await current_state.get_state()
-        if state is None:
-            state = ''
-        is_user = database.is_user_exists(message)
-        if not 'input_location' in state and is_user:  # Если пользователь выбирает город, тоже не вызываем ошибку
-            if 'input_name' in state:  # Если пользователь вводит имя, не вызываем ошибку
-                return
-            is_birth = await database_temp.get_birth_status(message.from_user.id)
-            if not is_birth:  # Если пользователь не ввёл свой день рождения/город вызываем ошибку
-                raise BirthRequestNotSent()
+        if message.chat.type == 'private':
+            current_state = dp.current_state(user=message.from_user.id)
+            state = await current_state.get_state()
+            if state is None:
+                state = ''
+            is_user = database.is_user_exists(message)
+            if not 'input_location' in state and is_user:  # Если пользователь выбирает город, тоже не вызываем ошибку
+                if 'input_name' in state:  # Если пользователь вводит имя, не вызываем ошибку
+                    return
+                is_birth = await database_temp.get_birth_status(message.from_user.id)
+                if not is_birth:  # Если пользователь не ввёл свой день рождения/город вызываем ошибку
+                    raise BirthRequestNotSent()
 
 
 class BirthRequestNotSent(Exception):
@@ -40,5 +41,6 @@ async def birth_request_not_sent_handler(update: Update, exception):
 
 
 def middleware_register(dp):
-    dp.middleware.setup(BirthRequestMiddleware())
-    dp.register_errors_handler(birth_request_not_sent_handler, exception=BirthRequestNotSent)
+    pass
+    # dp.middleware.setup(BirthRequestMiddleware())
+    # dp.register_errors_handler(birth_request_not_sent_handler, exception=BirthRequestNotSent)

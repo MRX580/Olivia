@@ -119,9 +119,14 @@ async def check_time(message: types.Message, state: FSMContext):
 async def get_name(message: types.Message, state: FSMContext):
     logging_to_file_telegram('info', f'[{message.from_user.id} | {message.from_user.first_name}] Придумал себе имя "{message.text}" при регистрации')
     database.update_name(message)
-    await bot.send_message(message.chat.id, lang[database.get_language(message)]['get_date_start'],
-                           reply_markup=await DialogCalendar(language=database.get_language(message)).start_calendar(year=1995))
-    database_temp.check_entry(message.chat.id, False)
+    await bot.send_message(message.chat.id, lang[database.get_language(message)]['question_start'](message))
+    await Register.input_question.set()
+    await state.update_data(check='False')
+    await asyncio.sleep(90)
+    await check_time(message, state)
+    # await bot.send_message(message.chat.id, lang[database.get_language(message)]['get_date_start'],
+    #                        reply_markup=await DialogCalendar(language=database.get_language(message)).start_calendar(year=1995))
+    # database_temp.check_entry(message.chat.id, False)
 
 
 async def thanks(message: types.Message, state: FSMContext):
@@ -260,10 +265,6 @@ async def payment(message: types.Message, state: FSMContext):
     await bot.send_message(message.chat.id, lang[database.get_language(message)]['payment_choice'],
                            reply_markup=Kb.PAYMENT)
     await state.update_data(delete_msg_id=message['message_id'])
-
-
-async def start_date(message: types.Message):
-    await message.answer("Please select a date: ", reply_markup=await DialogCalendar(language=database.get_language(message)).start_calendar(year=1995))
 
 
 def get_city_info(city):

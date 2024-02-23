@@ -61,7 +61,7 @@ async def plus_energy(dp):
     asyncio.create_task(send_kpi())
     if CODE_MODE == 'PROD':
         asyncio.create_task(database.get_users_value())
-    await get_date_from_users()
+    # await get_date_from_users()
 
 
 if __name__ == "__main__":

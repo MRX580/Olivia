@@ -121,6 +121,8 @@ async def get_card(message: types.Message, state: FSMContext, extra_keyboard=Fal
     buffer = process_reversed_card_img(message, path_img, card_name)
     interpretation_text = await generate_chatgpt_text_and_send_animation(state, message, card_name)
     await send_initial_messages(message, state, interpretation_text, mode)
+    logging_to_file_telegram('info',
+                             f'[{message.from_user.id} | {message.from_user.first_name}] {interpretation_text}')
     msg = await send_card_image_and_caption(message, buffer, interpretation_text, extra_keyboard)
     second_rand_card = await get_second_card_if_exists(temp_data)
     await update_state_data_and_database(msg, message, state, card_name, interpretation_text, rand_card, second_rand_card)
