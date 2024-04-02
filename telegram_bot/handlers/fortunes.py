@@ -33,7 +33,7 @@ DIR_REVERSE = lambda lang: f'static/text/{lang}/reverse'
 
 
 async def typing(message: types.Message, mode='typing'):
-    await bot.send_chat_action(message.chat.id, mode)
+    await bot.send_chat_action(message.from_user.id, mode)
 
 
 def chat_gpt_text_generation(state_data: FSMContext, name_card: str, lang_user: str, is_reversed: bool = False) -> str:
@@ -205,9 +205,9 @@ async def get_fortune_three_cards(message: types.Message, state: FSMContext):
     if CODE_MODE == 'PROD':
         amplitude.track(BaseEvent(event_type='PSF', user_id=f'{message.from_user.id}'))
     logging_to_file_telegram('info', f'[{message.from_user.id} | {message.from_user.first_name}] Callback: get_3_cards')
-    await bot.send_photo(message.chat.id, open('static/img/static/past_present_future.jpg', 'rb'))
+    await bot.send_photo(message.from_user.id, open('static/img/static/past_present_future.jpg', 'rb'))
     await state.update_data(past=False, present=False, future=False)
-    await bot.send_message(message.chat.id, lang[database.get_language(message)]['open_cards'],
+    await bot.send_message(message.from_user.id, lang[database.get_language(message)]['open_cards'],
                            reply_markup=KbReply.PPF_MENU(message, await state.get_data()))
     await Session.session_3_cards.set()
 
@@ -231,17 +231,17 @@ async def get_fortune_chatgpt(message: types.Message, state: FSMContext):
 async def get_fortune(message: types.Message, state: FSMContext):
     if database.get_olivia_energy() > 0:
         if message.text in all_lang['get_card_again']:
-            await bot.send_message(message.chat.id, lang[database.get_language(message)]['question_again'](message),
+            await bot.send_message(message.from_user.id, lang[database.get_language(message)]['question_again'](message),
                                    reply_markup=types.ReplyKeyboardRemove())
         else:
-            await bot.send_message(message.chat.id, lang[database.get_language(message)]['question_start'](message),
+            await bot.send_message(message.from_user.id, lang[database.get_language(message)]['question_start'](message),
                                    reply_markup=types.ReplyKeyboardRemove())
         await Register.input_question.set()
         await state.update_data(check='False')
         await check_time(message, state)
         return
     else:
-        await bot.send_message(message.chat.id, lang[database.get_language(message)]['no_energy'])
+        await bot.send_message(message.from_user.id, lang[database.get_language(message)]['no_energy'])
         return
 
 
