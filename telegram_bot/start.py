@@ -61,7 +61,10 @@ async def send_letter_to_users():
     users = database_user.get_all_users()
     keyboard = Kb
     for user in users:
-        await bot.send_message(user[1], lang[user[5]]['first_april'], reply_markup=keyboard.FIRST_APRIL(user[5]))
+        try:
+            await bot.send_message(user[1], lang[user[5]]['first_april'], reply_markup=keyboard.FIRST_APRIL(user[5]))
+        except (aiogram.utils.exceptions.BotBlocked, aiogram.utils.exceptions.UserDeactivated):
+            pass
 
 
 async def runnable(dp):
