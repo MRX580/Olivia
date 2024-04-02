@@ -14,6 +14,7 @@ from telegram_bot.states.main import Register
 from telegram_bot.utils.logging_system import logging_to_file_telegram
 from telegram_bot.utils.auto_creating_adress import BitcoinAddress, RippleAddress, EthereumAddress
 from telegram_bot.states.main import Session
+from telegram_bot.handlers.fortunes import get_card
 
 from aiogram_calendar import DialogCalendar, dialog_cal_callback
 
@@ -190,8 +191,13 @@ async def result_full_my_timepicker(callback_query: types.CallbackQuery, state: 
     await Register.input_location.set()
 
 
+async def start_fortune(callback_query: types.CallbackQuery, state: FSMContext):
+    print('123')
+    await get_card(callback_query, state)
+
 
 def register_handlers_callback(dp: Dispatcher):
+    dp.register_callback_query_handler(start_fortune, text=['start_fortune'], state='*')
     dp.register_callback_query_handler(switch_language, text=['switch english', 'switch russian', 'switch english_command',
                                                               'switch russian_command'], state='*')
     dp.register_callback_query_handler(full_text, text=['full_text'], state=[Session.session, Session.session_3_cards])

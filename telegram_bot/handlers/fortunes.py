@@ -77,7 +77,7 @@ def get_reversed_text(lang_user, card_name):
     return os.path.join(DIR_REVERSE(lang_user), f'{card_name}.txt')
 
 
-def process_reversed_card_img(message: types.Message, path_img, card_name):
+def process_reversed_card_img(message: types.Message or types.CallbackQuery, path_img, card_name):
     im = Image.open(open(path_img, 'rb'))
     buffer = io.BytesIO()
 
@@ -100,6 +100,7 @@ async def run_chat_gpt_text_generation(state: FSMContext, message, card_name):
     loop = asyncio.get_event_loop()
     executor = ThreadPoolExecutor()
     temp_data = await state.get_data()
+    await state.update_data(is_run=True)
     lang_user = database.get_language(message)
     task2 = loop.run_in_executor(executor, chat_gpt_text_generation, temp_data, card_name, lang_user,
                                  is_card_reversed(lang_user, card_name))
@@ -109,8 +110,14 @@ async def run_chat_gpt_text_generation(state: FSMContext, message, card_name):
     return await task2
 
 
-async def get_card(message: types.Message, state: FSMContext, extra_keyboard=False, mode=''):
+async def get_card(message: types.Message or types.CallbackQuery, state: FSMContext, extra_keyboard=False, mode=''):
     temp_data = await state.get_data()
+    try:
+        if temp_data['is_run']:
+            print('Подождите карта генерируется')
+            return
+    except KeyError:
+        pass
     rand_card = select_random_card(temp_data)
     lang_user = database.get_language(message)
     card = os.listdir(DIR_IMG)[rand_card][:-4]
@@ -160,7 +167,7 @@ async def send_card_image_and_caption(message, buffer, interpretation_text, extr
     if not extra_keyboard:
         extra_keyboard = KbReply.FULL_TEXT(message)
     database.change_last_attempt(message)
-    return await bot.send_photo(message.chat.id, buffer.getbuffer(), caption=interpretation_text[:1023],
+    return await bot.send_photo(message.from_user.id, buffer.getbuffer(), caption=interpretation_text[:1023],
                                 reply_markup=extra_keyboard)
 
 
@@ -171,14 +178,14 @@ async def send_initial_messages(message, state, interpretation_text, mode):
 
 
 async def send_mode_message(message, mode):
-    await bot.send_message(message.chat.id, lang[database.get_language(message)][mode], parse_mode='markdown')
+    await bot.send_message(message.from_user.id, lang[database.get_language(message)][mode], parse_mode='markdown')
 
 
 async def send_initial_animation(message):
-    await bot.send_animation(message.chat.id, 'https://media.giphy.com/media/3oKIPolAotPmdjjVK0/giphy.gif')
+    await bot.send_animation(message.from_user.id, 'https://media.giphy.com/media/3oKIPolAotPmdjjVK0/giphy.gif')
 
 
-async def update_state_data_and_database(msg, message: types.Message, state: FSMContext, card_name, interpretation_text,
+async def update_state_data_and_database(msg, message: types.Message or types.CallbackQuery, state: FSMContext, card_name, interpretation_text,
                                          rand_card, second_rand_card):
     message_id = msg.message_id
     async with state.proxy() as data:
@@ -230,7 +237,6 @@ async def get_fortune(message: types.Message, state: FSMContext):
                                    reply_markup=types.ReplyKeyboardRemove())
         await Register.input_question.set()
         await state.update_data(check='False')
-        await asyncio.sleep(90)
         await check_time(message, state)
         return
     else:

@@ -12,6 +12,7 @@ from utils.languages import lang
 from migrations import Migration
 from middleware.main import middleware_register
 from aiogram_calendar import DialogCalendar
+from keyboards.inline_keyboard import Kb
 
 database = Database()
 database_user = User()
@@ -56,9 +57,17 @@ async def get_date_from_users():
                 pass
 
 
-async def plus_energy(dp):
+async def send_letter_to_users():
+    users = database_user.get_all_users()
+    keyboard = Kb
+    for user in users:
+        await bot.send_message(user[1], lang[user[5]]['first_april'], reply_markup=keyboard.FIRST_APRIL(user[5]))
+
+
+async def runnable(dp):
     asyncio.create_task(database.get_energy())
     asyncio.create_task(send_kpi())
+    asyncio.create_task(send_letter_to_users())
     if CODE_MODE == 'PROD':
         asyncio.create_task(database.get_users_value())
     # await get_date_from_users()
@@ -73,4 +82,4 @@ if __name__ == "__main__":
     middleware_register(dp)
     if not Migration.is_perform_migrations():
         print("ONLINE")
-        executor.start_polling(dp, skip_updates=True, on_startup=plus_energy)
+        executor.start_polling(dp, skip_updates=True, on_startup=runnable)
