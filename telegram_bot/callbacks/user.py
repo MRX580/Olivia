@@ -194,6 +194,7 @@ async def result_full_my_timepicker(callback_query: types.CallbackQuery, state: 
 async def start_fortune(callback_query: types.CallbackQuery, state: FSMContext):
     prompt = {'messages': [{'role': 'system', 'content': None}]}
     await state.update_data(prompt=prompt, is_run=False)
+    await Session.get_card.set()
     await get_card(callback_query, state)
 
 
