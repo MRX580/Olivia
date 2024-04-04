@@ -38,7 +38,10 @@ async def typing(message: types.Message, mode='typing'):
 
 def chat_gpt_text_generation(state_data: FSMContext, name_card: str, lang_user: str, is_reversed: bool = False) -> str:
     result = ""
-    letter_prompt = state_data['is_letter_prompt']
+    try:
+        letter_prompt = state_data['is_letter_prompt']
+    except KeyError:
+        letter_prompt = False
     if state_data['prompt']['messages'][0]['content'] is None:
         if letter_prompt:
             result = openai.ChatCompletion.create(
