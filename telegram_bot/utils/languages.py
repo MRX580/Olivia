@@ -41,9 +41,9 @@ lang = {
         'fortune_choice': choice(['Draw one card', 'Pull one card', 'Reveal one card']),
         'fortune': ['Draw one card', 'Pull one card', 'Reveal one card'],
         'past_present_future': choice(['"Past present future"']),
-        'fortune_again_choice': choice(['May I ask another question?', 'Olivia, can you do one ore reading?',
+        'fortune_again_choice': choice(['May I ask another question?', 'Olivia, can you do one more reading?',
                                  'I\'d love to clarify one more thing']),
-        'fortune_again': ['May I ask another question?', 'Olivia, can you do one ore reading?',
+        'fortune_again': ['May I ask another question?', 'Olivia, can you do one more reading?',
                                  'I\'d love to clarify one more thing'],
         'end_session': lambda m: choice([f'Happy to serve, {database.get_name(m)}. I\'ll be waiting for you next visit',
                                          f'I\'ll keep everything in my memory for you, {database.get_name(m)}. Welcome '
