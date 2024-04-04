@@ -75,5 +75,9 @@ class TextVariables:
             f'''
        The next question is {question} and the tarot card you see is the {card} {"and it's reversed" if is_reversed else ""} Answer the question in the most sophisticated way. While paying attention to the common sense and being like Olivia, make your interpretations be down to earth, straight to the point and practical with your interpretation.‘What I see here is that you…’, ‘I feel…’ , 'Among all possible meanings, I'd emphasise on…', 'If it's reversed - that simply means that..' and etc. '''])
 
+        self.letter_prompt = lambda card='', is_reversed='', question='': \
+            f'''Как дела?
+        '''
+
 
 text_data = TextVariables()
