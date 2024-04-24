@@ -97,7 +97,7 @@ async def check_time(message: types.Message, state: FSMContext):
     try:
         if data['check'] == 'False':
             logging_to_file_telegram('info',
-                                     f'[{message.from_user.id} | {message.from_user.first_name}] Callback: check_time | Карта открыта без вопроса')
+                                     f'[{message.from_user.id} | {message.from_user.first_name}] Callback: check_time | Пользователь не задал вопрос')
             await bot.send_message(message.chat.id, lang[database.get_language(message)]['get_card'],
                                    reply_markup=KbReply.GET_CARD(message))
             data = await state.get_data('rand_card')
@@ -113,7 +113,7 @@ async def check_time(message: types.Message, state: FSMContext):
             await Session.get_card.set()
     except KeyError:
         logging_to_file_telegram('info',
-                                 f'[{message.from_user.id} | {message.from_user.first_name}] Callback: check_time | Карта открыта с вопросом')
+                                 f'[{message.from_user.id} | {message.from_user.first_name}] Callback: check_time | Пользователь задал вопрос')
         pass
 
 

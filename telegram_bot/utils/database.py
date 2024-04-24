@@ -1,8 +1,9 @@
 import sqlite3
 import asyncio
 import json
+import pandas as pd
 
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from typing import Union
 
 from aiogram.types import Message, CallbackQuery, Update
@@ -74,6 +75,25 @@ class Database:
     def convert_time(self, time: str):
         data = time[:-7].replace('-', ':').replace(' ', ':').split(':')
         return datetime(int(data[0]), int(data[1]), int(data[2]), int(data[3]), int(data[4]), int(data[5]))
+
+
+def calculate_retention(valid_user_count, total_user_count):
+    return valid_user_count / total_user_count if total_user_count else 0
+
+
+def count_total_users(df):
+    return df['user_id'].nunique()
+
+
+def count_valid_users(df):
+    df['create_at'] = pd.to_datetime(df['create_at'])
+
+    def sessions_with_required_gap(group):
+        group = group.sort_values(by='create_at')
+        return group['create_at'].diff().dt.total_seconds().div(3600).gt(4).sum() >= 1
+
+    valid_users = df.groupby('user_id').filter(lambda x: sessions_with_required_gap(x))
+    return valid_users['user_id'].nunique()
 
 
 class User(Database):
@@ -205,12 +225,47 @@ class User(Database):
         return values.count(True)
 
     def get_active_users_for_today(self):
-        today = date.today()
-        today_str = today.strftime('%Y-%m-%d')
-        sql_query = f"SELECT * FROM users WHERE DATE(last_attempt) = '{today_str}'"
-        self.cur.execute(sql_query)
-        rows = self.cur.fetchall()
-        return len(rows)
+        today = date.today().strftime('%Y-%m-%d')
+        self.cur.execute("SELECT COUNT(*) FROM users WHERE DATE(last_attempt) = ?", (today,))
+        return self.cur.fetchone()[0]
+
+    def get_active_users_for_last_week(self):
+        end_date = date.today()
+        start_date = end_date - timedelta(days=7)
+        self.cur.execute("SELECT COUNT(*) FROM users WHERE DATE(last_attempt) BETWEEN ? AND ?",
+                         (start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d')))
+        return self.cur.fetchone()[0]
+
+    def get_active_users_for_last_month(self):
+        end_date = date.today()
+        start_date = end_date - timedelta(days=30)
+        self.cur.execute("SELECT COUNT(*) FROM users WHERE DATE(last_attempt) BETWEEN ? AND ?",
+                         (start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d')))
+        return self.cur.fetchone()[0]
+
+    def get_all_active_users(self):
+        self.cur.execute("SELECT * FROM users WHERE is_first_try = ?", (True,))
+        return len(self.cur.fetchall())
+
+    def load_data(self, days):
+        query = """
+        SELECT user_id, create_at
+        FROM history
+        WHERE create_at >= ?
+        """
+        date_n_days_ago = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d %H:%M:%S')
+        return pd.read_sql_query(query, self.conn, params=[date_n_days_ago])
+
+    def get_retention_data(self, days):
+        data = self.load_data(days)
+        valid_user_count = count_valid_users(data)
+        total_user_count = count_total_users(data)
+        retention_rate = calculate_retention(valid_user_count, total_user_count)
+        return {
+            "valid_user_count": valid_user_count,
+            "total_user_count": total_user_count,
+            "retention_rate": retention_rate
+        }
 
 
 class Fortune(Database):
