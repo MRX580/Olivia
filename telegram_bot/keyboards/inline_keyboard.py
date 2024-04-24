@@ -45,3 +45,7 @@ class Kb:
         InlineKeyboardButton('Ethereum(ETH)', callback_data='ethereum_address'),
         InlineKeyboardButton('Ripple(XRP)', callback_data='ripple_address')
     )
+
+    FIRST_APRIL = lambda user_lang: InlineKeyboardMarkup(row_width=1).add(
+        InlineKeyboardButton(text=lang[user_lang]['fool_card_button'], callback_data='start_fortune')
+    )
