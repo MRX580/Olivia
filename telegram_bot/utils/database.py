@@ -199,14 +199,6 @@ class User(Database):
         self.cur.execute(f'UPDATE olivia SET energy = energy+1')
         self.conn.commit()
 
-    def get_all_users_for_today(self):
-        today = date.today()
-        today_str = today.strftime('%Y-%m-%d')
-        sql_query = f"SELECT * FROM history WHERE DATE(create_at) = '{today_str}'"
-        self.cur.execute(sql_query)
-        rows = self.cur.fetchall()
-        return len(rows)
-
     def get_all_history(self):
         return len(self.cur.execute(f'SELECT * FROM history').fetchall())
 
@@ -225,8 +217,9 @@ class User(Database):
         return values.count(True)
 
     def get_active_users_for_today(self):
-        today = date.today().strftime('%Y-%m-%d')
-        self.cur.execute("SELECT COUNT(*) FROM users WHERE DATE(last_attempt) = ?", (today,))
+        twenty_four_hours_ago = datetime.now() - timedelta(days=1)
+        twenty_four_hours_ago_iso = twenty_four_hours_ago.strftime('%Y-%m-%d %H:%M:%S')
+        self.cur.execute("SELECT COUNT(*) FROM users WHERE last_attempt > ?", (twenty_four_hours_ago_iso,))
         return self.cur.fetchone()[0]
 
     def get_active_users_for_last_week(self):
