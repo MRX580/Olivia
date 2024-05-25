@@ -32,13 +32,21 @@ async def switch_language(call: types.CallbackQuery):
         if call.data == 'switch english':
             logging_to_file_telegram('info', f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Смена языка на английский(регистрация)')
             database.switch_language('en', call)
-            await call.message.edit_text(lang[database.get_language(call)]['start'],
-                                         reply_markup=Kb.LANGUAGES)
+            await bot.send_message(
+                call.from_user.id,
+                'Thank you, let’s communicate in English now.\nWhat is your name (or codename), guest?🦄',
+                reply_markup=types.ReplyKeyboardRemove()
+            )
+            await Register.input_name.set()
         elif call.data == 'switch russian':
             logging_to_file_telegram('info', f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Смена языка на русский(регистрация)')
             database.switch_language('ru', call)
-            await call.message.edit_text(lang[database.get_language(call)]['start'],
-                                         reply_markup=Kb.LANGUAGES)
+            await bot.send_message(
+                call.from_user.id,
+                'Спасибо, продолжим общение на русском.\nКак я могу называть Вас, гость?🦄',
+                reply_markup=types.ReplyKeyboardRemove()
+            )
+            await Register.input_name.set()
         elif call.data == 'switch english_command':
             logging_to_file_telegram('info', f'[{call.from_user.id} | {call.from_user.first_name}] Callback: Смена языка на английский(/language)')
             database.switch_language('en', call)
