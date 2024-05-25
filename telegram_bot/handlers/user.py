@@ -133,14 +133,12 @@ async def get_name(message: types.Message):
     if lang_user == 'ru':
         await bot.send_message(
             message.chat.id,
-            f'Вам тут рады, {message.text}, добро пожаловать.\n\nНачнем наше первое гадание?\nЗадайте свой вопрос 👇',
-            reply_markup=KbReply.GET_CARD(message)
+            f'Вам тут рады, {message.text}, добро пожаловать.\n\nНачнем наше первое гадание?\nЗадайте свой вопрос 👇'
         )
     elif lang_user == 'en':
         await bot.send_message(
             message.chat.id,
-            f'Warm welcome, {message.text}, honored to meet you.\n\nLet’s start our first reading?\nAsk your question 👇',
-            reply_markup=KbReply.GET_CARD(message)
+            f'Warm welcome, {message.text}, honored to meet you.\n\nLet’s start our first reading?\nAsk your question 👇'
         )
 
     await Register.input_question.set()
