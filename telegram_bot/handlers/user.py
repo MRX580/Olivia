@@ -128,14 +128,12 @@ async def check_time(message: types.Message, state: FSMContext):
         pass
 
 
-async def get_name(message: types.Message, state = FSMContext):
+async def get_name(message: types.Message):
     logging_to_file_telegram('info',
                              f'[{message.from_user.id} | {message.from_user.first_name}] Придумал себе имя "{message.text}" при регистрации')
     database.create_user(message)
     database.update_name(message)
     lang_user = database.get_language(message)
-    state_data = await state.get_data()
-    await bot.delete_message(message.from_user.id, state_data['welcome_message_id'])
     if lang_user == 'ru':
         await bot.send_message(
             message.chat.id,
