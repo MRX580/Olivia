@@ -325,6 +325,15 @@ class Decks(Database):
     def get_reversed(self, lang: str, text: str):
         return self.cur.execute(f'SELECT reversed FROM decks WHERE {lang} = "{text}"').fetchone()[0]
 
+    def reset_all_cards(self):
+        self.cur.execute('UPDATE decks SET reversed = 0')
+        self.conn.commit()
+
+    def is_more_than_30_cards_flipped(self):
+        self.cur.execute('SELECT COUNT(*) FROM decks WHERE reversed = 1')
+        count = self.cur.fetchone()[0]
+        return count > 30
+
 
 class Web3(Database):
     def create_unique_address(self, blockchain, address, user_id):

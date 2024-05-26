@@ -6,6 +6,7 @@ class Register(StatesGroup):
     input_question = State()
     input_date = State()
     input_location = State()
+    input_language = State()
 
 
 class Session(StatesGroup):

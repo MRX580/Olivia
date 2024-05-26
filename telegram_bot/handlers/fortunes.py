@@ -9,6 +9,7 @@ from PIL import Image
 from aiogram import types, Dispatcher
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher import FSMContext
+from aiogram.types.reply_keyboard import ReplyKeyboardRemove
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
 
@@ -56,7 +57,8 @@ def chat_gpt_text_generation(state_data: FSMContext, name_card: str, lang_user: 
                 model="gpt-3.5-turbo-0301",
                 temperature=0.8,
                 messages=[
-                    {'role': 'assistant', 'content': text_data.ru_prompt(name_card, is_reversed, state_data['question'])}])
+                    {'role': 'assistant',
+                     'content': text_data.ru_prompt(name_card, is_reversed, state_data['question'])}])
         elif lang_user == 'en':
             result = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo-0301",
@@ -69,7 +71,8 @@ def chat_gpt_text_generation(state_data: FSMContext, name_card: str, lang_user: 
                 model="gpt-3.5-turbo-0301",
                 temperature=0.8,
                 messages=[*state_data['prompt']['messages'],
-                          {'role': 'system', 'content': text_data.ru_continue_prompt(name_card, is_reversed, state_data['question'])}])
+                          {'role': 'system',
+                           'content': text_data.ru_continue_prompt(name_card, is_reversed, state_data['question'])}])
         elif lang_user == 'en':
             result = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo-0301",
@@ -90,10 +93,11 @@ def get_reversed_text(lang_user, card_name):
 
 
 def process_reversed_card_img(message: types.Message or types.CallbackQuery, path_img, card_name):
+    lang_user = database.get_language(message)
     im = Image.open(open(path_img, 'rb'))
     buffer = io.BytesIO()
 
-    if is_card_reversed(database.get_language(message), card_name):
+    if is_card_reversed(lang_user, card_name):
         im = im.rotate(180)
 
     im.save(buffer, format='JPEG', quality=75)
@@ -113,38 +117,58 @@ async def run_chat_gpt_text_generation(state: FSMContext, message, card_name):
     executor = ThreadPoolExecutor()
     temp_data = await state.get_data()
     await state.update_data(is_run=True)
+
     lang_user = database.get_language(message)
-    task2 = loop.run_in_executor(executor, chat_gpt_text_generation, temp_data, card_name, lang_user,
-                                 is_card_reversed(lang_user, card_name))
+    is_reversed = is_card_reversed(lang_user, card_name)
+
+    task2 = loop.run_in_executor(executor, chat_gpt_text_generation, temp_data, card_name, lang_user, is_reversed)
+
     while not task2.done():
         await typing(message)
         await asyncio.sleep(2)
+
+    await state.update_data(is_run=False)
     return await task2
 
 
 async def get_card(message: types.Message or types.CallbackQuery, state: FSMContext, extra_keyboard=False, mode=''):
     temp_data = await state.get_data()
-    try:
-        if temp_data['is_run']:
-            print('Подождите карта генерируется')
-            return
-    except KeyError:
-        pass
+
+    if temp_data.get('is_run'):
+        print('Подождите карта генерируется')
+        return
+
+    if database_decks.is_more_than_30_cards_flipped():
+        logging_to_file_telegram('info', 'Карты были перевернуты в исходное положение')
+        database_decks.reset_all_cards()
+
     rand_card = select_random_card(temp_data)
     lang_user = database.get_language(message)
-    card = os.listdir(DIR_IMG)[rand_card][:-4]
+    card_files = os.listdir(DIR_IMG)
+    card = card_files[rand_card][:-4]
     card_name = decks[card][lang_user]
     path_img = os.path.join(DIR_IMG, f'{card}.jpg')
-    logging_to_file_telegram('info', f'[{message.from_user.id} | {message.from_user.first_name}] card: {card_name} | reverse: {bool(is_card_reversed(lang_user, card_name))} |'
-        f' lang_user: {lang_user} | card: {card}\npath_img - {path_img}')
+    is_reversed = is_card_reversed(lang_user, card_name)
+
+    logging_to_file_telegram('info',
+                             f'[{message.from_user.id} | {message.from_user.first_name}] card: {card_name} | reverse: {bool(is_reversed)} | lang_user: {lang_user} | card: {card}\npath_img - {path_img}')
+
     buffer = process_reversed_card_img(message, path_img, card_name)
     interpretation_text = await generate_chatgpt_text_and_send_animation(state, message, card_name)
+    await asyncio.sleep(1)
+
+    temp_data = await state.get_data()
     await send_initial_messages(message, state, interpretation_text, mode)
-    logging_to_file_telegram('info',
-                             f'[{message.from_user.id} | {message.from_user.first_name}] {interpretation_text}')
+
+    logging_to_file_telegram('info', f'[{message.from_user.id} | {message.from_user.first_name}] {interpretation_text}')
+
     msg = await send_card_image_and_caption(message, buffer, interpretation_text, extra_keyboard)
+    await asyncio.sleep(1)
+    await bot.delete_message(message.from_user.id, temp_data.get('animation_message'))
     second_rand_card = await get_second_card_if_exists(temp_data)
-    await update_state_data_and_database(msg, message, state, card_name, interpretation_text, rand_card, second_rand_card)
+
+    await update_state_data_and_database(msg, message, state, card_name, interpretation_text, rand_card,
+                                         second_rand_card)
     await handle_random_card_update(message, card, card_name)
 
 
@@ -162,22 +186,27 @@ def select_random_card(temp_data):
 
 
 async def generate_chatgpt_text_and_send_animation(state, message, card_name):
-    await send_initial_animation(message)
+    await send_initial_animation(message, state)
     return await run_chat_gpt_text_generation(state, message, card_name)
 
 
 async def update_prompt_messages(state: FSMContext, interpretation_text):
     temp_data = await state.get_data()
-    if temp_data['prompt']['messages'][0]['content'] is None:
-        await state.update_data(prompt={'messages': [{'role': 'system', 'content': interpretation_text}]})
+    messages = temp_data['prompt']['messages']
+
+    new_message = {'role': 'system', 'content': interpretation_text}
+    if messages[0]['content'] is None:
+        messages = [new_message]
     else:
-        await state.update_data(prompt={'messages': [*temp_data['prompt']['messages'],
-                                                     {'role': 'system', 'content': interpretation_text}]})
+        messages.append(new_message)
+
+    await state.update_data(prompt={'messages': messages})
 
 
 async def send_card_image_and_caption(message, buffer, interpretation_text, extra_keyboard):
     if not extra_keyboard:
         extra_keyboard = KbReply.FULL_TEXT(message)
+
     database.change_last_attempt(message)
     return await bot.send_photo(message.from_user.id, buffer.getbuffer(), caption=interpretation_text[:1023],
                                 reply_markup=extra_keyboard)
@@ -185,6 +214,7 @@ async def send_card_image_and_caption(message, buffer, interpretation_text, extr
 
 async def send_initial_messages(message, state, interpretation_text, mode):
     await update_prompt_messages(state, interpretation_text)
+
     if mode in ['past', 'present', 'future']:
         await send_mode_message(message, mode)
 
@@ -193,23 +223,33 @@ async def send_mode_message(message, mode):
     await bot.send_message(message.from_user.id, lang[database.get_language(message)][mode], parse_mode='markdown')
 
 
-async def send_initial_animation(message):
-    await bot.send_animation(message.from_user.id, 'https://media.giphy.com/media/3oKIPolAotPmdjjVK0/giphy.gif')
+async def send_initial_animation(message, state: FSMContext):
+    animation_message = await bot.send_animation(
+        message.from_user.id,
+        'https://media.giphy.com/media/3oKIPolAotPmdjjVK0/giphy.gif',
+        reply_markup=ReplyKeyboardRemove()
+    )
+    await state.update_data(animation_message=animation_message.message_id)
 
 
-async def update_state_data_and_database(msg, message: types.Message or types.CallbackQuery, state: FSMContext, card_name, interpretation_text,
-                                         rand_card, second_rand_card):
+async def update_state_data_and_database(msg, message: types.Message or types.CallbackQuery, state: FSMContext,
+                                         card_name, interpretation_text, rand_card, second_rand_card):
     message_id = msg.message_id
     async with state.proxy() as data:
         data[message_id] = interpretation_text
-        database_fortune.add_history(message, card_name, interpretation_text[:150], data['question'], message_id, interpretation_text)
-    await state.update_data(card=card_name, thx=False, full_text=False, rand_card=[rand_card, second_rand_card], text_data=interpretation_text, message_id=message_id)
+        database_fortune.add_history(message, card_name, interpretation_text[:150], data['question'], message_id,
+                                     interpretation_text)
+
+    await state.update_data(card=card_name, thx=False, full_text=False, rand_card=[rand_card, second_rand_card],
+                            text_data=interpretation_text, message_id=message_id)
     database_fortune.check_first_try(message)
 
 
 async def handle_random_card_update(message, card, card_name):
-    if random.randint(1, 10) in [1, 2, 3, 4, 5]:
-        database_decks.update_reverse(database.get_language(message), decks[card]['reversed'], card_name)
+    if random.randint(1, 10) <= 5:
+        lang_user = database.get_language(message)
+        reversed_card = decks[card]['reversed']
+        database_decks.update_reverse(lang_user, reversed_card, card_name)
 
 
 async def get_fortune_three_cards(message: types.Message, state: FSMContext):
@@ -226,7 +266,8 @@ async def get_fortune_three_cards(message: types.Message, state: FSMContext):
 async def get_fortune_one_cards(message: types.Message, state: FSMContext):
     if CODE_MODE == 'PROD':
         amplitude.track(BaseEvent(event_type='OneCard', user_id=f'{message.from_user.id}'))
-    logging_to_file_telegram('info', f'[{message.from_user.id} | {message.from_user.first_name}] Callback: Посмотреть карту')
+    logging_to_file_telegram('info',
+                             f'[{message.from_user.id} | {message.from_user.first_name}] Callback: Посмотреть карту')
     await get_card(message, state)
     await update_energy_and_schedule_session_close(state, message)
 
@@ -242,10 +283,12 @@ async def get_fortune_chatgpt(message: types.Message, state: FSMContext):
 async def get_fortune(message: types.Message, state: FSMContext):
     if database.get_olivia_energy() > 0:
         if message.text in all_lang['get_card_again']:
-            await bot.send_message(message.from_user.id, lang[database.get_language(message)]['question_again'](message),
+            await bot.send_message(message.from_user.id,
+                                   lang[database.get_language(message)]['question_again'](message),
                                    reply_markup=types.ReplyKeyboardRemove())
         else:
-            await bot.send_message(message.from_user.id, lang[database.get_language(message)]['question_start'](message),
+            await bot.send_message(message.from_user.id,
+                                   lang[database.get_language(message)]['question_start'](message),
                                    reply_markup=types.ReplyKeyboardRemove())
         await Register.input_question.set()
         await state.update_data(check='False')
