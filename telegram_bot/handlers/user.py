@@ -58,9 +58,10 @@ async def welcome(message: types.Message, state: FSMContext):
         )
         await Register.input_name.set()
         return
-    elif not database.is_user_exists(message) or not user_language:
+    elif not user_language:
         await Register.input_language.set()
-        database.create_user(message)
+        if not database.is_user_exists(message):
+            database.create_user(message)
         msg = await bot.send_message(
             message.chat.id,
             'Welcome, wonderer.\nВсегда рада новому гостю.\n\nНа каком языке предпочитаете общаться?\nWhich language '
