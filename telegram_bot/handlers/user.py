@@ -47,8 +47,20 @@ async def welcome(message: types.Message, state: FSMContext):
     logging_to_file_telegram('info',
                              f'[{message.from_user.id} | {message.from_user.first_name}] Написал {message.text}')
     await state.finish()
-    if not database.is_user_exists(message):
+
+    user_language = database.get_language(message)
+
+    if not database.get_name(message) and user_language:
+        await bot.send_message(
+            message.from_user.id,
+            lang[user_language]['your_name_question'],
+            reply_markup=types.ReplyKeyboardRemove()
+        )
+        await Register.input_name.set()
+        return
+    elif not database.is_user_exists(message) or not user_language:
         await Register.input_language.set()
+        database.create_user(message)
         msg = await bot.send_message(
             message.chat.id,
             'Welcome, wonderer.\nВсегда рада новому гостю.\n\nНа каком языке предпочитаете общаться?\nWhich language '
@@ -131,7 +143,6 @@ async def check_time(message: types.Message, state: FSMContext):
 async def get_name(message: types.Message):
     logging_to_file_telegram('info',
                              f'[{message.from_user.id} | {message.from_user.first_name}] Придумал себе имя "{message.text}" при регистрации')
-    database.create_user(message)
     database.update_name(message)
     lang_user = database.get_language(message)
     if lang_user == 'ru':

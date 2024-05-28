@@ -116,7 +116,7 @@ class User(Database):
         self.cur.execute('INSERT INTO users(user_id, first_name, name, energy, language, attempts_used, last_attempt, '
                          'is_first_try, join_at, phone_number, username, natal_data, natal_city) '
                          'VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)',
-                         (tg_user.id, tg_user.first_name, '', 100, 'ru', 0, time, False, time,
+                         (tg_user.id, tg_user.first_name, '', 100, None, 0, time, False, time,
                           contact.phone_number if contact is not None else None, tg_user.username, None, None))
         self.cur.execute(f'UPDATE olivia SET max_energy = {self.get_len_all_users() * 3}')
         self.conn.commit()
@@ -164,7 +164,10 @@ class User(Database):
     def get_language(self, tg_user: CallbackQuery or Message):
         if type(tg_user) == Update:
             tg_user = tg_user.message
-        return self.cur.execute(f'SELECT language FROM users WHERE user_id = {tg_user.from_user.id}').fetchone()[0]
+        result = self.cur.execute(f'SELECT language FROM users WHERE user_id = {tg_user.from_user.id}').fetchone()
+        if result is None:
+            return None
+        return result[0]
 
     def get_opened_cards(self, tg_user: CallbackQuery or Message):
         self.cur.execute("SELECT COUNT(*) FROM history WHERE user_id = ?", (tg_user.from_user.id,))
@@ -189,7 +192,10 @@ class User(Database):
         return result
 
     def get_name(self, tg_user: CallbackQuery or Message):
-        return self.cur.execute(f'SELECT name FROM users WHERE user_id = {tg_user.from_user.id}').fetchone()[0]
+        result = self.cur.execute(f'SELECT name FROM users WHERE user_id = {tg_user.from_user.id}').fetchone()
+        if result is None:
+            return None
+        return result[0]
 
     def minus_energy(self):
         self.cur.execute(f'UPDATE olivia SET energy = energy-1')

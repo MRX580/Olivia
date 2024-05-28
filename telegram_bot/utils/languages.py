@@ -102,6 +102,7 @@ I’m here to let my community know when something is going wrong and then direc
         'city_not_recognized': 'Unable to recognize the city',
         'city_end_message': 'Thank you for trusting me, now tell me what bothers you today?',
         'fool_card_button': 'Card of the Fool’s Day',
+        'your_name_question': 'What is your name (or codename), guest?🦄',
         'first_april': """🃏 Happy Fool's Day, dear Wonderers 🃏
 
 Did you know, the the Fool is the first Major Arcana in tarot? This archetype reminds us, that even the wisest among us are allowed to take a moment and embrace the delightful chaos of life's journey!
@@ -209,6 +210,7 @@ Wanna know how? Here is your card of the day 👇
         'city_not_recognized': 'Не удалось распознать город',
         'city_end_message': 'Спасибо что доверились мне, теперь расскажите, что вас беспокоит сегодня?',
         'fool_card_button': 'Карта для дня Дурака',
+        'your_name_question': 'Как я могу называть Вас, гость?🦄',
         'first_april': """🃏 С Днем Дурака, дорогие Искатели 🃏
 
 А знали ли вы, что Дурак - точка отсчета в старших арканах Таро? Этот архетип напоминает, что даже самым мудрым из нас бывает полезно с головой окунуться в веселый хаос жизненного пути!
