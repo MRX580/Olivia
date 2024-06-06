@@ -1,9 +1,10 @@
+import os
 import sqlite3
 
 
 class DatabaseManager:
     def __init__(self, db_file):
-        self.conn = sqlite3.connect(db_file)
+        self.conn = sqlite3.connect(os.path.join(os.path.dirname(__file__), db_file))
         self.cursor = self.conn.cursor()
 
     def create_column(self, table_name, column_name, data_type, default_value):

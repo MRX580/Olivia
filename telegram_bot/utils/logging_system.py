@@ -1,3 +1,4 @@
+import os
 import logging
 from logging.handlers import TimedRotatingFileHandler
 from telegram_bot.create_bot import bot
@@ -16,7 +17,9 @@ class TelegramLogsHandler(logging.Handler):
 
 
 def logging_to_file_telegram(log_type, *args):
-    log_file = 'logs/bot.log'
+    log_dir = os.path.join(os.path.dirname(__file__), '../logs')
+    os.makedirs(log_dir, exist_ok=True)
+    log_file = os.path.join(log_dir, 'bot.log')
     logger = logging.getLogger(__name__)
 
     # Словарь уровней логирования
@@ -40,6 +43,3 @@ def logging_to_file_telegram(log_type, *args):
     # Логирование сообщений
     for message in args:
         logger.log(log_levels[log_type], message)
-
-
-

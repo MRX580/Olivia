@@ -119,7 +119,7 @@ async def check_time(message: types.Message, state: FSMContext):
     await asyncio.sleep(90)
     data = await state.get_data()
     try:
-        if data['check'] == 'False':
+        if data['check'] == 'False': # Заменить на время 
             logging_to_file_telegram('info',
                                      f'[{message.from_user.id} | {message.from_user.first_name}] Callback: check_time | Пользователь не задал вопрос')
             await bot.send_message(message.chat.id, lang[database.get_language(message)]['get_card'],

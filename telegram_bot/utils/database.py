@@ -1,3 +1,4 @@
+import os
 import sqlite3
 import asyncio
 import json
@@ -13,7 +14,7 @@ amplitude = Amplitude("bbdc22a8304dbf12f2aaff6cd40fbdd3")
 
 
 class Database:
-    conn = sqlite3.connect('utils/users.db')
+    conn = sqlite3.connect(os.path.join(os.path.dirname(__file__), 'users.db'))
     cur = conn.cursor()
     cur.execute('CREATE TABLE IF NOT EXISTS users (id INTEGER NOT NULL PRIMARY KEY, user_id INT, first_name TEXT, '
                 'name TEXT, energy INT, language TEXT, '
