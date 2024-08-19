@@ -15,7 +15,8 @@ RUN apt-get update && apt-get install -y \
 ENV PYTHONPATH=/app
 
 # Создаем необходимые директории
-RUN mkdir -p /app/telegram_bot/utils /app/telegram_bot/logs
+RUN mkdir -p /app/telegram_bot/utils /app/telegram_bot/logs /app/telegram_bot/static/img/decks_1
+
 
 # Копируем файл requirements.txt в рабочую директорию
 COPY requirements.txt .

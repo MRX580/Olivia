@@ -28,7 +28,8 @@ database = User()
 database_fortune = Fortune()
 database_decks = Decks()
 
-DIR_IMG = 'static/img/decks_1'
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DIR_IMG = os.path.join(BASE_DIR, '..', 'static', 'img', 'decks_1')
 DIR_TXT = lambda lang: f'static/text/{lang}/day_card'
 DIR_REVERSE = lambda lang: f'static/text/{lang}/reverse'
 
@@ -203,13 +204,29 @@ async def update_prompt_messages(state: FSMContext, interpretation_text):
     await state.update_data(prompt={'messages': messages})
 
 
+def escape_markdown_v2(text):
+    escape_chars = r'_*[]()~`>#+-=|{}.!'
+    return ''.join(['\\' + char if char in escape_chars else char for char in text])
+
+
 async def send_card_image_and_caption(message, buffer, interpretation_text, extra_keyboard):
     if not extra_keyboard:
         extra_keyboard = KbReply.FULL_TEXT(message)
 
     database.change_last_attempt(message)
-    return await bot.send_photo(message.from_user.id, buffer.getbuffer(), caption=interpretation_text[:1023],
-                                reply_markup=extra_keyboard)
+
+    # Экранируем весь текст, включая ссылку
+    caption_text = escape_markdown_v2(
+        interpretation_text[:997]) + "\n\n[Погадать у Оливии?](https://t\\.me\\/Oliviathebot)"
+
+    # Отправляем фото с подписью и клавиатурой
+    return await bot.send_photo(
+        message.from_user.id,
+        buffer.getbuffer(),
+        caption=caption_text,
+        parse_mode="MarkdownV2",
+        reply_markup=extra_keyboard
+    )
 
 
 async def send_initial_messages(message, state, interpretation_text, mode):

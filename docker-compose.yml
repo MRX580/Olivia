@@ -10,6 +10,7 @@ services:
       - REDIS_PORT=6379
     volumes:
       - .:/app
+      - users_db_volume:/app/telegram_bot/utils
     depends_on:
       - redis
 
@@ -17,3 +18,6 @@ services:
     image: "redis:alpine"
     ports:
       - "6379:6379"
+
+volumes:
+  users_db_volume:

@@ -7,15 +7,13 @@ from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher import FSMContext
 from datetime import datetime, timedelta
 from amplitude import Amplitude, BaseEvent
-from aiogram_calendar import DialogCalendar
 
-from telegram_bot.create_bot import bot, dp, CODE_MODE
+from telegram_bot.create_bot import bot, CODE_MODE
 from telegram_bot.keyboards.inline_keyboard import Kb
 from telegram_bot.keyboards.reply_keyboard import KbReply
 from telegram_bot.utils.database import User, Fortune, Wisdom, Temp
 from telegram_bot.utils.languages import lang, all_lang
 from telegram_bot.utils.logging_system import logging_to_file_telegram
-# from telegram_bot.callbacks.user import full_text_history
 from telegram_bot.states.main import Session, WisdomState, Register
 
 database = User()
@@ -27,7 +25,6 @@ amplitude = Amplitude("bbdc22a8304dbf12f2aaff6cd40fbdd3")
 
 
 def callback_fun(e, code, message):
-    """A callback function"""
     print(e)
     print(code, message)
 
@@ -49,7 +46,6 @@ async def welcome(message: types.Message, state: FSMContext):
     await state.finish()
 
     user_language = database.get_language(message)
-
     if not database.get_name(message) and user_language:
         await bot.send_message(
             message.from_user.id,
@@ -220,31 +216,6 @@ async def about_olivia(message: types.Message, state: FSMContext):
     msg = await bot.send_message(message.chat.id, lang[database.get_language(message)]['about_olivia'],
                                  reply_markup=Kb.BACK_TO_FORTUNE(message))
     await state.update_data(delete_msg_id=msg['message_id'], user_message_id=message['message_id'])
-
-
-# async def history(message: types.Message, state: FSMContext):
-#     logging_to_file_telegram('info', f'[{message.from_user.id} | {message.from_user.first_name}] command: /memories')
-#     async with state.proxy() as data:
-#         if database_fortune.get_history(message):
-#             msg_d = []
-#             for count, i in enumerate(database_fortune.get_history(message)):
-#                 if count == 5:
-#                     break
-#                 time = list(map(int, i[3][:-7].split(' ')[0].split('-'))) + list(
-#                     map(int, i[3][:-7].split(' ')[1].split(':')))
-#                 tt = datetime(month=time[1], year=time[0], day=time[2], hour=time[3], minute=time[4],
-#                               second=time[5])  # 2022-11-18 13:04:38.097140
-#                 time_result = '%s/%s/%s %s:%s' % (tt.day, tt.month, tt.year, tt.hour, tt.minute)
-#                 msg = await bot.send_message(message.chat.id, '%s\n%s\n\n<b>%s</b>\n<i>%s</i>' % (
-#                 time_result, i[4], i[1], i[2].replace('\t', '')), parse_mode='HTML')
-#                 await bot.edit_message_reply_markup(message_id=msg['message_id'], chat_id=message.chat.id,
-#                                                     reply_markup=Kb.HISTORY_FULL(msg["message_id"]))
-#                 data[f'{msg["message_id"]}'] = {'time': time_result, 'card_name': i[1], 'full_text': i[8], 'short_text': i[2],
-#                                                 'user_q': i[4]}
-#                 msg_d.append(msg["message_id"])
-#             dp.register_callback_query_handler(full_text_history, text=msg_d, state='*')
-#         else:
-#             await bot.send_message(message.chat.id, lang[database.get_language(message)]['empty_history'])
 
 
 async def feedback(message: types.Message, state: FSMContext):
