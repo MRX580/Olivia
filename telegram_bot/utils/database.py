@@ -1,77 +1,93 @@
 import os
-import sqlite3
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
+
+import mysql.connector
 import asyncio
-import json
 import pandas as pd
 
 from datetime import datetime, date, timedelta
 from typing import Union
-
+from dotenv import load_dotenv, find_dotenv
 from aiogram.types import Message, CallbackQuery, Update
 from amplitude import Amplitude, BaseEvent
 
 amplitude = Amplitude("bbdc22a8304dbf12f2aaff6cd40fbdd3")
+load_dotenv(find_dotenv())
+
+class SingletonMeta(type):
+    """
+    Паттерн Singleton: Метакласс, который обеспечивает создание одного экземпляра класса.
+    """
+    _instances = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            instance = super().__call__(*args, **kwargs)
+            cls._instances[cls] = instance
+        return cls._instances[cls]
 
 
-class Database:
-    conn = sqlite3.connect(os.path.join(os.path.dirname(__file__), 'users.db'))
-    cur = conn.cursor()
-    cur.execute('CREATE TABLE IF NOT EXISTS users (id INTEGER NOT NULL PRIMARY KEY, user_id INT, first_name TEXT, '
-                'name TEXT, energy INT, language TEXT, '
-                'attempts_used INT, last_attempt DATETIME, is_first_try BOOL, join_at datetime, phone_number TEXT, '
-                'username TEXT, natal_data TEXT, natal_city);')
+class Database(metaclass=SingletonMeta):
+    def __init__(self):
+        self.connect_to_db()
 
-    cur.execute('CREATE TABLE IF NOT EXISTS fortune (id INTEGER NOT NULL PRIMARY KEY, user_id INT, first_name TEXT, '
-                'card_type TEXT, answer TEXT, type_fortune TEXT, '
-                'create_at datetime);')
+    def connect_to_db(self):
+        try:
+            self.conn = mysql.connector.connect(
+                host=os.getenv("DB_HOST"),
+                user=os.getenv("DB_USER"),
+                password=os.getenv("DB_PASSWORD"),
+                database=os.getenv("DB_DATABASE"),
+                autocommit=True,
 
-    cur.execute('CREATE TABLE IF NOT EXISTS wisdom (id INTEGER NOT NULL PRIMARY KEY, user_id INT, first_name TEXT, '
-                'message TEXT, create_at datetime);')
+            )
+        except mysql.connector.Error as err:
+            print(f"Error: {err}")
+            self.conn = None
 
-    cur.execute('CREATE TABLE IF NOT EXISTS history(user_id INT, card TEXT, '
-                'text TEXT, create_at DATETIME, user_q TEXT, reaction TEXT, message_id INT, thanks BOOL, full_text '
-                'TEXT);')
+    def check_connection(self):
+        if self.conn is None or not self.conn.is_connected():
+            self.connect_to_db()
 
-    cur.execute('CREATE TABLE IF NOT EXISTS questions(id INTEGER NOT NULL PRIMARY KEY, user_id INT, question TEXT, '
-                'create_at DATETIME);')
+    def execute_query(self, query, params=None):
+        self.check_connection()
+        with self.conn.cursor() as cur:
+            cur.execute(query, params or ())
+            return cur.fetchall()
 
-    cur.execute('CREATE TABLE IF NOT EXISTS olivia(energy INT, max_energy INT);')
-
-    cur.execute('CREATE TABLE IF NOT EXISTS decks(ru TEXT, en TEXT, reversed BOOL);')
-
-    cur.execute('CREATE TABLE IF NOT EXISTS web3_addresses(user_id INT, bitcoin TEXT, ethereum TEXT, ripple TEXT);')
-
-    cur.execute('CREATE TABLE IF NOT EXISTS temp_data(user_id INT, birth_request_sent BOOL);')
-
-    decks = cur.execute('SELECT * FROM decks').fetchone()
-    if decks is None:
-        with open('utils/sample.json', 'r', encoding='utf-8') as f:
-            data_decks = json.load(f)
-        for item in data_decks:
-            cur.execute('INSERT INTO decks(ru, en, reversed) VALUES(?,?,?)', (item[0], item[1], item[2]))
-            conn.commit()
-
-    data = cur.execute('SELECT * FROM olivia').fetchone()
-    if data is None:
-        cur.execute('INSERT INTO olivia(energy, max_energy) VALUES(?,?)', (3, 3))
-        conn.commit()
+    def execute_update(self, query, params=None):
+        self.check_connection()
+        with self.conn.cursor() as cur:
+            cur.execute(query, params or ())
+            self.conn.commit()
 
     async def get_energy(self):
         while True:
             await asyncio.sleep(3600)
-            max_energy = int(self.cur.execute('SELECT max_energy FROM olivia').fetchone()[0])
-            energy = self.cur.execute('SELECT energy FROM olivia').fetchone()[0]
-            if energy < max_energy:
-                self.cur.execute(f'UPDATE olivia SET energy = energy+1')
-            self.conn.commit()
+            max_energy_query = 'SELECT max_energy FROM olivia'
+            energy_query = 'SELECT energy FROM olivia'
+            self.check_connection()
+            with self.conn.cursor() as cur:
+                cur.execute(max_energy_query)
+                max_energy = int(cur.fetchall()[0][0])
+                cur.execute(energy_query)
+                energy = cur.fetchall()[0][0]
+                if energy < max_energy:
+                    cur.execute('UPDATE olivia SET energy = energy + 1')
+                self.conn.commit()
 
     async def get_users_value(self):
         while True:
             await asyncio.sleep(600)
-            value_users = len(self.cur.execute('SELECT * FROM users').fetchall()[0])
-            amplitude.track(BaseEvent(event_type='PingUsers', user_id='currently_users',
-                                      event_properties={'currently_users': value_users}))
-            self.conn.commit()
+            count_query = 'SELECT COUNT(*) FROM users'
+            self.check_connection()
+            with self.conn.cursor() as cur:
+                cur.execute(count_query)
+                value_users = cur.fetchall()[0][0]
+                amplitude.track(BaseEvent(event_type='PingUsers', user_id='currently_users',
+                                          event_properties={'currently_users': value_users}))
+                self.conn.commit()
 
     def convert_time(self, time: str):
         data = time[:-7].replace('-', ':').replace(' ', ':').split(':')
@@ -98,160 +114,190 @@ def count_valid_users(df):
 
 
 class User(Database):
+    def __init__(self):
+        print(11)
+        super().__init__()
+
     def is_user_exists(self, tg_user: Message):
         tg_user = tg_user.from_user
-        user = self.cur.execute(f'SELECT * FROM users WHERE user_id = {tg_user.id}').fetchone()
-        if user:
-            return user
-        return False
+        query = 'SELECT * FROM users WHERE user_id = %s'
+        user = self.execute_query(query, (tg_user.id,))
+        return user if user else False
+
+    def execute_batch_update(self, query, data):
+        with self.conn.cursor() as cursor:
+            cursor.executemany(query, data)
+        self.conn.commit()
 
     def add_question(self, tg_user: Message or CallbackQuery, text: str):
-        self.cur.execute('INSERT INTO questions(user_id, question, create_at) VALUES(?,?,?)', (tg_user.from_user.id,
-                                                                                               text, datetime.now()))
-        self.conn.commit()
+        query = 'INSERT INTO questions(user_id, question, create_at) VALUES(%s,%s,%s)'
+        self.execute_update(query, (tg_user.from_user.id, text, datetime.now()))
 
     def create_user(self, tg_user: Message):
         contact = tg_user.contact
         tg_user = tg_user.from_user
         time = datetime.now()
-        self.cur.execute('INSERT INTO users(user_id, first_name, name, energy, language, attempts_used, last_attempt, '
-                         'is_first_try, join_at, phone_number, username, natal_data, natal_city) '
-                         'VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)',
-                         (tg_user.id, tg_user.first_name, '', 100, None, 0, time, False, time,
-                          contact.phone_number if contact is not None else None, tg_user.username, None, None))
-        self.cur.execute(f'UPDATE olivia SET max_energy = {self.get_len_all_users() * 3}')
-        self.conn.commit()
+        user_query = '''INSERT INTO users(user_id, first_name, name, energy, language, attempts_used, last_attempt, 
+                             is_first_try, join_at, phone_number, username, natal_data, natal_city, available_openings, subscription, subscription_expired) 
+                             VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'''
+        olivia_query = 'UPDATE olivia SET max_energy = %s'
+        self.execute_update(user_query, (tg_user.id, tg_user.first_name, '', 100, None, 0, time, False, time,
+                                         contact.phone_number if contact is not None else None, tg_user.username, None,
+                                         None, 3, "basic", None))
+        self.execute_update(olivia_query, (self.get_len_all_users() * 3,))
 
     def update_name(self, tg_user: Message):
-        self.cur.execute(f'UPDATE users SET name = "{tg_user.text}" WHERE user_id = {tg_user.from_user.id}')
-        self.conn.commit()
+        query = 'UPDATE users SET name = %s WHERE user_id = %s'
+        self.execute_update(query, (tg_user.text, tg_user.from_user.id))
 
     def update_natal_data(self, tg_user: Message, natal_data):
-        self.cur.execute(f'UPDATE users SET natal_data = {natal_data} WHERE user_id = {tg_user.from_user.id}')
-        self.conn.commit()
+        query = 'UPDATE users SET natal_data = %s WHERE user_id = %s'
+        self.execute_update(query, (natal_data, tg_user.from_user.id))
 
     def update_natal_city(self, tg_user: Message, natal_city):
-        self.cur.execute(f'UPDATE users SET natal_city = "{natal_city}" WHERE user_id = {tg_user.from_user.id}')
-        self.conn.commit()
+        query = 'UPDATE users SET natal_city = %s WHERE user_id = %s'
+        self.execute_update(query, (natal_city, tg_user.from_user.id))
 
-    def switch_language(self, language: str,
-                        tg_user: CallbackQuery or Message):
-        self.cur.execute(f'UPDATE users SET language = "{language}" WHERE user_id = {tg_user.from_user.id}')
-        self.conn.commit()
+    def update_available_openings(self, tg_user: Message or int, available_openings):
+        if isinstance(tg_user, Message):
+            tg_user = tg_user.from_user.id
+        query = 'UPDATE users SET available_openings = %s WHERE user_id = %s'
+        self.execute_update(query, (available_openings, tg_user))
+
+    def switch_language(self, language: str, tg_user: CallbackQuery or Message):
+        query = 'UPDATE users SET language = %s WHERE user_id = %s'
+        self.execute_update(query, (language, tg_user.from_user.id))
 
     def get_last_5_history(self, tg_user: Message or CallbackQuery):
-        return [i[0] for i in self.cur.execute(f'SELECT create_at FROM history WHERE user_id = {tg_user.from_user.id} ORDER BY '
-                                               f'create_at').fetchall()][:5]
+        query = 'SELECT create_at FROM history WHERE user_id = %s ORDER BY create_at'
+        return [i[0] for i in self.execute_query(query, (tg_user.from_user.id,))][:5]
 
     def get_last_5_history_back(self, tg_user: Message or CallbackQuery):
-        return [i[0]+'_back' for i in self.cur.execute(f'SELECT create_at FROM history WHERE user_id = {tg_user.from_user.id} ORDER BY '
-                                               f'create_at').fetchall()][:5]
+        query = 'SELECT create_at FROM history WHERE user_id = %s ORDER BY create_at'
+        return [i[0] + '_back' for i in self.execute_query(query, (tg_user.from_user.id,))][:5]
 
     def get_data_history(self):
-        return [i[0] for i in self.cur.execute('SELECT create_at FROM history').fetchall()]
+        query = 'SELECT create_at FROM history'
+        return [i[0] for i in self.execute_query(query)]
 
     def get_data_history_back(self):
-        return [i[0]+'_back' for i in self.cur.execute('SELECT create_at FROM history').fetchall()]
+        query = 'SELECT create_at FROM history'
+        return [i[0] + '_back' for i in self.execute_query(query)]
 
     def get_len_all_users(self):
-        return len(self.cur.execute(f'SELECT * FROM users').fetchall())
+        query = 'SELECT COUNT(*) FROM users'
+        return self.execute_query(query)[0][0]
 
     def get_all_users(self):
-        return self.cur.execute(f'SELECT * FROM users').fetchall()
+        query = 'SELECT * FROM users'
+        return self.execute_query(query)
 
     def get_olivia_energy(self):
-        return self.cur.execute(f'SELECT energy FROM olivia').fetchone()[0]
+        query = 'SELECT energy FROM olivia'
+        result = self.execute_query(query)[0][0]
+        return int(result)
 
     def get_language(self, tg_user: CallbackQuery or Message):
-        if type(tg_user) == Update:
+        if isinstance(tg_user, Update):
             tg_user = tg_user.message
-        result = self.cur.execute(f'SELECT language FROM users WHERE user_id = {tg_user.from_user.id}').fetchone()
-        if result is None:
+        query = 'SELECT language FROM users WHERE user_id = %s'
+        result = self.execute_query(query, (tg_user.from_user.id,))
+        if not result:
             return None
-        return result[0]
+        return result[0][0]
 
     def get_opened_cards(self, tg_user: CallbackQuery or Message):
-        self.cur.execute("SELECT COUNT(*) FROM history WHERE user_id = ?", (tg_user.from_user.id,))
-        result = self.cur.fetchone()[0]
+        query = "SELECT COUNT(*) FROM history WHERE user_id = %s"
+        result = self.execute_query(query, (tg_user.from_user.id,))[0][0]
         return result
 
     def get_days_with_olivia(self, tg_user: CallbackQuery or Message):
-        query = self.cur.execute(f'SELECT join_at FROM users WHERE user_id = {tg_user.from_user.id}')
-        join_at_date = query.fetchone()[0]
+        query = 'SELECT join_at FROM users WHERE user_id = %s'
+        join_at_date = self.execute_query(query, (tg_user.from_user.id,))[0][0]
         last_registration = datetime.strptime(join_at_date, "%Y-%m-%d %H:%M:%S.%f")
-
         current_date = datetime.now()
-
         time_difference = current_date - last_registration
-
         days = time_difference.days
-
         months = days // 30
         remaining_days = days % 30
-
         result = f"{months} месяцев, {remaining_days} дней"
         return result
 
     def get_name(self, tg_user: CallbackQuery or Message):
-        result = self.cur.execute(f'SELECT name FROM users WHERE user_id = {tg_user.from_user.id}').fetchone()
-        if result is None:
+        query = 'SELECT name FROM users WHERE user_id = %s'
+        result = self.execute_query(query, (tg_user.from_user.id,))
+        if not result:
             return None
-        return result[0]
+        return result[0][0]
 
     def minus_energy(self):
-        self.cur.execute(f'UPDATE olivia SET energy = energy-1')
-        self.conn.commit()
+        query = 'UPDATE olivia SET energy = energy - 1'
+        self.execute_update(query)
 
     def plus_energy(self):
-        self.cur.execute(f'UPDATE olivia SET energy = energy+1')
-        self.conn.commit()
+        query = 'UPDATE olivia SET energy = energy + 1'
+        self.execute_update(query)
 
     def get_all_history(self):
-        return len(self.cur.execute(f'SELECT * FROM history').fetchall())
+        query = 'SELECT COUNT(*) FROM history'
+        return self.execute_query(query)[0][0]
 
     def change_last_attempt(self, tg_user: CallbackQuery or Message):
         time = datetime.now()
-        self.cur.execute(f'UPDATE users SET last_attempt = ? WHERE user_id = ?', (time, tg_user.from_user.id))
-        self.conn.commit()
+        query = 'UPDATE users SET last_attempt = %s WHERE user_id = %s'
+        self.execute_update(query, (time, tg_user.from_user.id))
+
+    def change_user_subscription(self, tg_user: CallbackQuery or Message, subscription: str):
+        if isinstance(tg_user, Message) or isinstance(tg_user, CallbackQuery):
+            tg_user = tg_user.from_user.id
+        query = 'UPDATE users SET subscription = %s WHERE user_id = %s'
+        self.execute_update(query, (subscription, tg_user))
+
+    def change_user_subscription_expired(self, user_id: int, subscription_expired):
+        query = 'UPDATE users SET subscription_expired = %s WHERE user_id = %s'
+        self.execute_update(query, (subscription_expired, user_id))
+
+    def set_subscription_expiration(self, tg_user: CallbackQuery or Message):
+        query = 'UPDATE users SET subscription_expired = %s WHERE user_id = %s'
+        self.execute_update(query, (datetime.now() + relativedelta(months=1), tg_user.from_user.id))
 
     def add_thanks(self, message_id):
-        self.cur.execute(f'UPDATE history SET thanks = True WHERE message_id = ?', (message_id, ))
-        self.conn.commit()
+        query = 'UPDATE history SET thanks = True WHERE message_id = %s'
+        self.execute_update(query, (message_id,))
 
     def get_all_thanks(self):
-        list_thanks = self.cur.execute("SELECT thanks FROM history").fetchall()
+        query = "SELECT thanks FROM history"
+        list_thanks = self.execute_query(query)
         values = [x[0] for x in list_thanks]
         return values.count(True)
 
     def get_active_users_for_today(self):
         twenty_four_hours_ago = datetime.now() - timedelta(days=1)
         twenty_four_hours_ago_iso = twenty_four_hours_ago.strftime('%Y-%m-%d %H:%M:%S')
-        self.cur.execute("SELECT COUNT(*) FROM users WHERE last_attempt > ?", (twenty_four_hours_ago_iso,))
-        return self.cur.fetchone()[0]
+        query = "SELECT COUNT(*) FROM users WHERE last_attempt > %s"
+        return self.execute_query(query, (twenty_four_hours_ago_iso,))[0][0]
 
     def get_active_users_for_last_week(self):
         end_date = date.today()
         start_date = end_date - timedelta(days=7)
-        self.cur.execute("SELECT COUNT(*) FROM users WHERE DATE(last_attempt) BETWEEN ? AND ?",
-                         (start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d')))
-        return self.cur.fetchone()[0]
+        query = "SELECT COUNT(*) FROM users WHERE DATE(last_attempt) BETWEEN %s AND %s"
+        return self.execute_query(query, (start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d')))[0][0]
 
     def get_active_users_for_last_month(self):
         end_date = date.today()
         start_date = end_date - timedelta(days=30)
-        self.cur.execute("SELECT COUNT(*) FROM users WHERE DATE(last_attempt) BETWEEN ? AND ?",
-                         (start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d')))
-        return self.cur.fetchone()[0]
+        query = "SELECT COUNT(*) FROM users WHERE DATE(last_attempt) BETWEEN %s AND %s"
+        return self.execute_query(query, (start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d')))[0][0]
 
     def get_all_active_users(self):
-        self.cur.execute("SELECT * FROM users WHERE is_first_try = ?", (True,))
-        return len(self.cur.fetchall())
+        query = "SELECT COUNT(*) FROM users WHERE is_first_try = %s"
+        return self.execute_query(query, (True,))[0][0]
 
     def load_data(self, days):
         query = """
         SELECT user_id, create_at
         FROM history
-        WHERE create_at >= ?
+        WHERE create_at >= %s
         """
         date_n_days_ago = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d %H:%M:%S')
         return pd.read_sql_query(query, self.conn, params=[date_n_days_ago])
@@ -267,17 +313,45 @@ class User(Database):
             "retention_rate": retention_rate
         }
 
+    def get_subscription(self, tg_user: CallbackQuery or Message):
+        query = 'SELECT subscription FROM users WHERE user_id = %s'
+        subscription = self.execute_query(query, (tg_user.from_user.id,))[0][0]
+        return subscription
+
+    def get_all_user_subscriptions(self):
+        query = 'SELECT user_id, subscription FROM users'
+        result = self.execute_query(query)
+        return {row[0]: row[1] for row in result}
+
+    def get_user_available_openings(self, tg_user: CallbackQuery or Message):
+        query = 'SELECT available_openings FROM users WHERE user_id = %s'
+        available_openings = self.execute_query(query, (tg_user.from_user.id,))[0][0]
+        return available_openings
+
+    def get_user_subscription_expiration(self, tg_user: CallbackQuery or Message) -> datetime:
+        query = 'SELECT subscription_expired FROM users WHERE user_id = %s'
+        expiration = self.execute_query(query, (tg_user.from_user.id,))[0][0]
+        return expiration
+
+    def get_users_subscription_expiration(self):
+        query = 'SELECT user_id, subscription_expired FROM users'
+        result = self.execute_query(query)
+        return {row[0]: row[1] for row in result}
+
+
 
 class Fortune(Database):
+    def __init__(self):
+        print(33)
+        super().__init__()
     def create_fortune(self, tg_user: Message or CallbackQuery,
                        card_type: str,
                        answer: str,
                        type_fortune: str):
-        tg_user = tg_user.from_user
-        self.cur.execute('INSERT INTO fortune(user_id, first_name, card_type, answer, type_fortune, create_at) '
-                         'VALUES(?,?,?,?,?,?)',
-                         (tg_user.id, tg_user.first_name, card_type, answer, type_fortune, datetime.now()))
-        self.conn.commit()
+        query = """INSERT INTO fortune(user_id, first_name, card_type, answer, type_fortune, create_at)
+        VALUES(%s,%s,%s,%s,%s,%s)"""
+        self.execute_update(query, (
+        tg_user.from_user.id, tg_user.from_user.first_name, card_type, answer, type_fortune, datetime.now()))
 
     def add_history(self, tg_user: Message or CallbackQuery,
                     card: str,
@@ -285,93 +359,98 @@ class Fortune(Database):
                     user_q: str,
                     message_id: int,
                     full_text: str):
-        self.cur.execute(f'INSERT INTO history(user_id, card, text, create_at, user_q, reaction, message_id, thanks, '
-                         f'full_text)'
-                         f' VALUES(?,?,?,?,?,?,?,?,?)',
-                         (tg_user.from_user.id, card, text, datetime.now(), user_q, None, message_id, False, full_text))
-        self.conn.commit()
+        query = '''INSERT INTO history(user_id, card, text, create_at, user_q, reaction, message_id, thanks, 
+                             full_text) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s)'''
+        self.execute_update(query, (
+            tg_user.from_user.id, card, text, datetime.now(), user_q, None, message_id, False, full_text))
 
     def get_full_text_on_message_id(self, message_id: int):
-        return self.cur.execute(f'SELECT full_text FROM history WHERE message_id = {message_id}').fetchone()
+        query = 'SELECT full_text FROM history WHERE message_id = %s'
+        return self.execute_query(query, (message_id,))[0]
 
     def get_history(self, tg_user: Message or CallbackQuery):
-        return self.cur.execute(f'SELECT * FROM history WHERE user_id = {tg_user.from_user.id}').fetchall()[::-1]
+        query = 'SELECT * FROM history WHERE user_id = %s ORDER BY create_at DESC'
+        return self.execute_query(query, (tg_user.from_user.id,))[0]
 
     def check_session(self, tg_user: Message or CallbackQuery):
-        data = self.cur.execute(f'SELECT create_at FROM fortune WHERE user_id = {tg_user.from_user.id} ORDER BY '
-                                f'create_at').fetchall()[-1][0]
+        query = 'SELECT create_at FROM fortune WHERE user_id = %s ORDER BY create_at DESC LIMIT 1'
+        data = self.execute_query(query, (tg_user.from_user.id,))[0][0]
         return self.convert_time(data)
 
     def check_first_try(self, tg_user: Message or CallbackQuery):
-        self.cur.execute(f'UPDATE users SET is_first_try = True WHERE user_id = {tg_user.from_user.id}')
-        self.conn.commit()
+        query = 'UPDATE users SET is_first_try = True WHERE user_id = %s'
+        self.execute_update(query, (tg_user.from_user.id,))
 
     def is_first_try(self, tg_user: Message or CallbackQuery):
-        return self.cur.execute(f'SELECT is_first_try FROM users WHERE user_id = {tg_user.from_user.id}').fetchone()[0]
+        query = 'SELECT is_first_try FROM users WHERE user_id = %s'
+        return self.execute_query(query, (tg_user.from_user.id,))[0][0]
 
     def change_reaction(self, reaction, message_id):
-        self.cur.execute(f'UPDATE history SET reaction = "{reaction}" WHERE message_id = {message_id}')
-        self.conn.commit()
+        query = 'UPDATE history SET reaction = %s WHERE message_id = %s'
+        self.execute_update(query, (reaction, message_id))
 
 
 class Wisdom(Database):
-    def add_wisdom(self, tg_user: Message or CallbackQuery,
-                   msg: str):
+    def __init__(self):
+        print(44)
+        super().__init__()
+
+    def add_wisdom(self, tg_user: Message or CallbackQuery, msg: str):
         tg_user = tg_user.from_user
-        self.cur.execute('INSERT INTO wisdom(user_id, first_name, message, create_at) VALUES(?,?,?,?)',
-                         (tg_user.id, tg_user.first_name, msg, datetime.now()))
-        self.conn.commit()
+        query = "INSERT INTO wisdom(user_id, first_name, message, create_at) VALUES(%s,%s,%s,%s)"
+        self.execute_update(query, (tg_user.id, tg_user.first_name, msg, datetime.now()))
 
 
 class Decks(Database):
+    def __init__(self):
+        super().__init__()
+
     def update_reverse(self, lang: str, reverse: bool, text: str):
-        reverse = False if reverse else True
-        self.cur.execute(f'UPDATE decks SET reversed = {reverse} WHERE {lang} = "{text}"')
-        self.conn.commit()
+        reverse = not reverse
+        query = "UPDATE decks SET reversed = %s WHERE {} = %s".format(lang)
+        self.execute_update(query, (reverse, text))
 
     def get_reversed(self, lang: str, text: str):
-        return self.cur.execute(f'SELECT reversed FROM decks WHERE {lang} = "{text}"').fetchone()[0]
+        query = 'SELECT reversed FROM decks WHERE {} = %s'.format(lang)
+        return self.execute_query(query, (text,))[0][0]
 
     def reset_all_cards(self):
-        self.cur.execute('UPDATE decks SET reversed = 0')
-        self.conn.commit()
+        query = 'UPDATE decks SET reversed = 0'
+        self.execute_update(query)
 
     def is_more_than_30_cards_flipped(self):
-        self.cur.execute('SELECT COUNT(*) FROM decks WHERE reversed = 1')
-        count = self.cur.fetchone()[0]
+        query = 'SELECT COUNT(*) FROM decks WHERE reversed = 1'
+        count = self.execute_query(query)[0][0]
         return count > 30
 
 
 class Web3(Database):
+    def __init__(self):
+        print(55)
+        super().__init__()
+
     def create_unique_address(self, blockchain, address, user_id):
         if not self.__is_user_in_database(user_id):
             self._create_user_row(user_id)
-
-        self.cur.execute(f'UPDATE web3_addresses SET {blockchain} = "{address}" WHERE user_id = "{user_id}"')
-        self.conn.commit()
+            query = "UPDATE web3_addresses SET {} = %s WHERE user_id = %s".format(blockchain)
+            self.execute_update(query, (address, user_id))
 
     def __is_user_in_database(self, user_id):
-        sql_query = f"SELECT * FROM web3_addresses WHERE user_id = ?"
-        self.cur.execute(sql_query, (user_id,))
-        result = self.cur.fetchall()
-        if not result:
-            return False
-        return True
+        query = "SELECT * FROM web3_addresses WHERE user_id = %s"
+        result = self.execute_query(query, (user_id,))
+        return bool(result)
 
     def _create_user_row(self, user_id):
-        sql_query = '''
+        query = '''
             INSERT INTO web3_addresses (user_id, bitcoin, ethereum, ripple)
-            VALUES (?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s)
             '''
-
-        self.cur.execute(sql_query, (user_id, '', '', ''))
-        self.conn.commit()
+        self.execute_update(query, (user_id, '', '', ''))
 
     def get_blockchain_address(self, blockchain, user_id):
         if self.is_user_addresses_exists(blockchain, user_id):
-            query = f'SELECT {blockchain} FROM web3_addresses WHERE user_id = {user_id}'
-            result_query = self.cur.execute(query).fetchone()[0]
-
+            query = 'SELECT {} FROM web3_addresses WHERE user_id = %s'.format(blockchain)
+            result_query = self.execute_query(query, (user_id,))[0]
             return result_query
         return None
 
@@ -379,36 +458,35 @@ class Web3(Database):
         if blockchain not in ['bitcoin', 'ethereum', 'ripple']:
             raise "Not correct blockchain, choice from - bitcoin, ethereum, ripple"
 
-        query = f'SELECT {blockchain} FROM web3_addresses WHERE user_id = {user_id}'
+        query = 'SELECT {} FROM web3_addresses WHERE user_id = %s'.format(blockchain)
         try:
-            result_query = self.cur.execute(query).fetchone()[0]
+            result_query = self.execute_query(query, (user_id,))[0]
         except TypeError:
             return False
-        if not result_query:
-            return False
-        return True
+        return bool(result_query)
 
 
 class Temp(Database):
+    def __init__(self):
+        print(66)
+        super().__init__()
 
     def is_birth_exist(self, user_id):
-        user = self.cur.execute(f'SELECT birth_request_sent FROM temp_data WHERE user_id = {user_id}').fetchone()
-        if user:
-            return True
-        return False
+        query = "SELECT birth_request_sent FROM temp_data WHERE user_id = %s"
+        user = self.execute_query(query, (user_id,))[0]
+        return bool(user)
 
     def check_entry(self, user_id, value=True):
         if self.is_birth_exist(user_id):
-            self.cur.execute('UPDATE temp_data SET birth_request_sent = True WHERE user_id = (?)', (user_id,))
-            self.conn.commit()
+            query = 'UPDATE temp_data SET birth_request_sent = %s WHERE user_id = %s'
+            self.execute_update(query, (True, user_id))
         else:
-            self.cur.execute('INSERT INTO temp_data(user_id, birth_request_sent) VALUES(?,?)', (user_id, value))
-            self.conn.commit()
+            query = 'INSERT INTO temp_data(user_id, birth_request_sent) VALUES(%s,%s)'
+            self.execute_update(query, (user_id, value))
 
     async def get_birth_status(self, user_id) -> Union[None, bool]:
-        result = self.cur.execute(f'SELECT birth_request_sent FROM temp_data WHERE user_id = {user_id}')
-        result = result.fetchone()
+        query = 'SELECT birth_request_sent FROM temp_data WHERE user_id = %s'
+        result = self.execute_query(query, (user_id,))[0]
         if result is None:
             return None
         return result[0]
-

@@ -1,11 +1,16 @@
 import asyncio
 import json
+from pathlib import Path
+
 import requests
 
 from aiogram import types, Dispatcher
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher import FSMContext
 from datetime import datetime, timedelta
+from dotenv import load_dotenv, find_dotenv
+
+from aiogram.types import LabeledPrice, InputFile, ContentType
 from amplitude import Amplitude, BaseEvent
 
 from telegram_bot.create_bot import bot, CODE_MODE
@@ -21,6 +26,9 @@ database_fortune = Fortune()
 database_wisdom = Wisdom()
 database_temp = Temp()
 
+current_dir = Path(__file__).resolve().parent
+
+load_dotenv(find_dotenv())
 amplitude = Amplitude("bbdc22a8304dbf12f2aaff6cd40fbdd3")
 
 
@@ -115,7 +123,7 @@ async def check_time(message: types.Message, state: FSMContext):
     await asyncio.sleep(90)
     data = await state.get_data()
     try:
-        if data['check'] == 'False': # Заменить на время 
+        if data['check'] == 'False': # Заменить на время
             logging_to_file_telegram('info',
                                      f'[{message.from_user.id} | {message.from_user.first_name}] Callback: check_time | Пользователь не задал вопрос')
             await bot.send_message(message.chat.id, lang[database.get_language(message)]['get_card'],
@@ -317,12 +325,113 @@ async def get_location(message: types.Message, state: FSMContext):
         await check_time(message, state)
 
 
+async def donate(message: types.Message, state: FSMContext):
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(types.KeyboardButton(text="Подписка Standard"))
+    keyboard.add(types.KeyboardButton(text="Подписка month unlimited"))
+    keyboard.add(types.KeyboardButton(text="Подписка Lifetime"))
+
+    # Отправляем сообщение с клавиатурой
+    await message.answer(
+        "Выберите свою подписку:",
+        reply_markup=keyboard
+    )
+
+
+async def standard_subscription(message: types.Message, state: FSMContext):
+    prices = [LabeledPrice(label='Standard', amount=100)]
+    await bot.send_invoice(
+        message.chat.id,
+        title='Покупка standard подписки',
+        description='С этой подпиской вы получаете 10 гаданий каждый день!',
+        payload='unique_payload',
+        provider_token='PROVIDER_TOKEN',
+        currency='XTR',
+        prices=prices,
+        start_parameter='purchase',
+        photo_url='https://t3.ftcdn.net/jpg/01/09/07/98/360_F_109079871_OigjZSPKSyTu7ap2nD3no18RjkLIH4eV.jpg'
+    )
+
+
+async def month_unlimited_subscription(message: types.Message, state: FSMContext):
+    prices = [LabeledPrice(label='Unlimited month', amount=400)]
+    await bot.send_invoice(
+        message.chat.id,
+        title='Покупка unlimited month подписки',
+        description='С этой подпиской вы получаете безграничные гадания на протяжении месяца!',
+        payload='unique_payload',
+        provider_token='PROVIDER_TOKEN',
+        currency='XTR',
+        prices=prices,
+        start_parameter='purchase',
+        photo_url='https://t3.ftcdn.net/jpg/01/09/07/98/360_F_109079871_OigjZSPKSyTu7ap2nD3no18RjkLIH4eV.jpg'
+    )
+
+
+async def handle_subscription_choice(message: types.Message):
+    if message.text == "Подписка Standard":
+        payload = "standard_subscription"
+        price = 100
+        label = "Подписка Standard"
+        description = "Подписка Standard даёт вам в течении месяца открывать до 10 карт в день!"
+    elif message.text == "Подписка month unlimited":
+        payload = "standard_subscription"
+        price = 400
+        label = "Подписка month unlimited"
+        description = "Подписка month unlimited даёт вам бессконечно открывать карты в течении месяца"
+    elif message.text == "Подписка Lifetime":
+        payload = "lifetime_subscription"
+        price = 4000
+        label = "Подписка Lifetime"
+        description = "Подписка Lifetime даёт вам пожизненый доступ к бессконечному количеству гаданий"
+    else:
+        await message.reply("Unknown subscription")
+        return
+
+    # Send invoice
+    await bot.send_invoice(
+        chat_id=message.from_user.id,
+        title=label,
+        description=description,
+        payload=payload,
+        provider_token="gklsnlhjrs@$jgae32523",
+        currency="XTR",
+        prices=[LabeledPrice(label=label, amount=price)],
+        photo_url='https://i.imgur.com/dI7HPmJ.jpeg',
+        start_parameter=payload
+    )
+
+
+async def successful_payment(message: types.Message) -> None:
+    item_id = message.successful_payment.invoice_payload
+
+    await bot.refund_star_payment(
+        user_id=message.from_user.id,
+        telegram_payment_charge_id=message.successful_payment.telegram_payment_charge_id,
+    )
+
+    if item_id == "standard_subscription":
+        await message.answer(
+            "Поздравляем! Вам выдана подписка Standard на месяц. Вы можете открывать до 10 карт в день!")
+        database.change_user_subscription(message, 'standard')
+    elif item_id == "month_unlimited_subscription":
+        await message.answer(
+            "Поздравляем! Вам выдана подписка month unlimited. Вы можете открывать карты неограниченно в течение месяца!")
+        database.change_user_subscription(message, 'month_unlimited')
+        database.set_subscription_expiration(message)
+    elif item_id == "lifetime_subscription":
+        await message.answer(
+            "Поздравляем! Вам выдана пожизненная подписка Lifetime. Вы можете открывать карты неограниченно!")
+        database.change_user_subscription(message, 'lifetime')
+
+
 def register_handlers_client(dp: Dispatcher):
     dp.register_message_handler(welcome, commands=['start', 'help'], state='*')
     dp.register_message_handler(about_olivia, commands=['intro'], state='*')
     dp.register_message_handler(join, commands=['join'], state='*')
     dp.register_message_handler(payment, commands=['payment'], state='*')
     dp.register_message_handler(change_language, commands=['language'], state='*')
+    dp.register_message_handler(donate, commands=['donate'], state='*')
     dp.register_message_handler(get_name, state=Register.input_name)
     dp.register_message_handler(get_question, state=Register.input_question)
     dp.register_message_handler(listen_wisdom, state=WisdomState.wisdom)
@@ -333,3 +442,6 @@ def register_handlers_client(dp: Dispatcher):
     dp.register_message_handler(after_session, Text(equals=all_lang['after_session']))
     dp.register_message_handler(after_session, Text(equals=all_lang['after_session']))
     dp.register_message_handler(get_location, state=Register.input_location)
+    dp.register_message_handler(handle_subscription_choice,
+                                text=["Подписка Standard", "Подписка month unlimited", "Подписка Lifetime"], state='*')
+    dp.register_message_handler(successful_payment, content_types=ContentType.SUCCESSFUL_PAYMENT)

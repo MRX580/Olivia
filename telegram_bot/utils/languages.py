@@ -110,7 +110,8 @@ Did you know, the the Fool is the first Major Arcana in tarot? This archetype re
 Today, and practically any other day as well, smile wide in the face of uncertainty. Let's play, be brave, absurd and courageous!
 
 Wanna know how? Here is your card of the day 👇
-        """
+        """,
+        'no_openings': 'I\'m tired and can\'t tell you your fortune anymore, come back tomorrow'
     },
 
 
@@ -218,7 +219,8 @@ Wanna know how? Here is your card of the day 👇
 Сегодня, и в любой другой день тоже, улыбнитесь широко в лицо неопределенности. Давайте играть, быть смелыми, абсурдными и отважными!
 
 Хотите узнать как? Вот ваша карта дня 👇
-        """
+        """,
+        'no_openings': 'Я устала и не могу больше погадать вам, приходите завтра'
     }
 }
 

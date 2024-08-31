@@ -51,7 +51,7 @@ docs/_build/
 
 venv
 .idea
-telegram_bot/.env
+.env
 telegram_bot/utils/users.db
 telegram_bot/bot.log
 telegram_bot/utils/decks_1

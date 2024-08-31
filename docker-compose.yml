@@ -1,13 +1,10 @@
-version: '3.8'
+version: '3.7'
 
 services:
   bot:
     build: .
     env_file:
-      - telegram_bot/.env
-    environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
+      - .env
     volumes:
       - .:/app
       - users_db_volume:/app/telegram_bot/utils

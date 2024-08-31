@@ -32,6 +32,61 @@ async def send_kpi():
             await asyncio.sleep(1)
 
 
+async def refresh_available_openings():
+    while True:
+        now = datetime.datetime.now()
+
+        if now.hour == 2:
+            user_ids = ADMINS_ID
+            start_time = datetime.datetime.now()
+            print(f"Обновление карт началось в: {start_time.strftime('%Y-%m-%d %H:%M:%S')}")
+
+            # Получаем всех пользователей и их подписки одним запросом
+            user_subscriptions = database_user.get_all_user_subscriptions()
+
+            updates = []
+            for user_id, subscription in user_subscriptions.items():
+                print(user_id)
+                updated_cards = 3  # Значение по умолчанию
+
+                if subscription == 'standard':
+                    updated_cards = 10
+
+                updates.append((updated_cards, user_id))
+
+            # Выполняем пакетное обновление данных
+            query = 'UPDATE users SET available_openings = %s WHERE user_id = %s'
+            database_user.execute_batch_update(query, updates)
+
+            print('Карты всех пользователей обновлены')
+
+            for user_id, user_date_expire in database_user.get_users_subscription_expiration().items():
+                if user_date_expire is None:
+                    continue
+                if user_date_expire < datetime.datetime.now():
+                    database_user.change_user_subscription_expired(user_id, None)
+                    database_user.change_user_subscription(user_id, 'basic')
+                    await asyncio.gather(
+                        *[bot.send_message(user_id, f"У ID - {user_id}. Закончилась месячная подписка") for user_id in
+                          user_ids]
+                    )
+
+
+            await asyncio.gather(
+                *[bot.send_message(user_id, "Карты наших любимых пользователей были обновлены") for user_id in user_ids]
+            )
+
+            end_time = datetime.datetime.now()
+            print(f"Обновление карт завершилось в: {end_time.strftime('%Y-%m-%d %H:%M:%S')}")
+            duration = end_time - start_time
+            print(f"Время выполнения: {duration}")
+
+            await asyncio.sleep(60)
+        else:
+            await asyncio.sleep(1)
+
+
+
 async def get_date_from_users():
     users = database_user.get_all_users()
     for i in users:
@@ -58,6 +113,7 @@ async def get_date_from_users():
 async def runnable(dp):
     asyncio.create_task(database.get_energy())
     asyncio.create_task(send_kpi())
+    asyncio.create_task(refresh_available_openings())
     # asyncio.create_task(send_letter_to_users())
     if CODE_MODE == 'PROD':
         asyncio.create_task(database.get_users_value())

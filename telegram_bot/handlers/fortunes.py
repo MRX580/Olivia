@@ -47,7 +47,7 @@ def chat_gpt_text_generation(state_data: FSMContext, name_card: str, lang_user: 
     if state_data['prompt']['messages'][0]['content'] is None:
         if letter_prompt:
             result = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo-0301",
+                model="gpt-4o-2024-08-06",
                 temperature=0.8,
                 messages=[
                     {'role': 'assistant',
@@ -55,28 +55,28 @@ def chat_gpt_text_generation(state_data: FSMContext, name_card: str, lang_user: 
             state_data['is_letter_prompt'] = False
         elif lang_user == 'ru':
             result = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo-0301",
+                model="gpt-4o-2024-08-06",
                 temperature=0.8,
                 messages=[
                     {'role': 'assistant',
                      'content': text_data.ru_prompt(name_card, is_reversed, state_data['question'])}])
         elif lang_user == 'en':
             result = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo-0301",
+                model="gpt-4o-2024-08-06",
                 messages=[
                     {'role': 'system', 'content': text_data.eng_prompt(name_card, is_reversed, state_data['question'])}]
             )
     else:
         if lang_user == 'ru':
             result = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo-0301",
+                model="gpt-4o-2024-08-06",
                 temperature=0.8,
                 messages=[*state_data['prompt']['messages'],
                           {'role': 'system',
                            'content': text_data.ru_continue_prompt(name_card, is_reversed, state_data['question'])}])
         elif lang_user == 'en':
             result = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo-0301",
+                model="gpt-4o-2024-08-06",
                 temperature=0.8,
                 messages=[*state_data['prompt']['messages'],
                           {'role': 'system',
@@ -167,7 +167,9 @@ async def get_card(message: types.Message or types.CallbackQuery, state: FSMCont
     await asyncio.sleep(1)
     await bot.delete_message(message.from_user.id, temp_data.get('animation_message'))
     second_rand_card = await get_second_card_if_exists(temp_data)
-
+    subscription = database.get_subscription(message)
+    if subscription not in ['month_unlimited', 'lifetime']:
+        database.update_available_openings(message, database.get_user_available_openings(message) - 1)
     await update_state_data_and_database(msg, message, state, card_name, interpretation_text, rand_card,
                                          second_rand_card)
     await handle_random_card_update(message, card, card_name)
@@ -298,22 +300,28 @@ async def get_fortune_chatgpt(message: types.Message, state: FSMContext):
 
 
 async def get_fortune(message: types.Message, state: FSMContext):
-    if database.get_olivia_energy() > 0:
-        if message.text in all_lang['get_card_again']:
-            await bot.send_message(message.from_user.id,
-                                   lang[database.get_language(message)]['question_again'](message),
-                                   reply_markup=types.ReplyKeyboardRemove())
-        else:
-            await bot.send_message(message.from_user.id,
-                                   lang[database.get_language(message)]['question_start'](message),
-                                   reply_markup=types.ReplyKeyboardRemove())
-        await Register.input_question.set()
-        await state.update_data(check='False')
-        await check_time(message, state)
-        return
-    else:
+    if database.get_olivia_energy() < 0:
         await bot.send_message(message.from_user.id, lang[database.get_language(message)]['no_energy'])
         return
+    available_openings = database.get_user_available_openings(message)
+    subscription = database.get_subscription(message)
+    if subscription not in ['month_unlimited', 'lifetime']:
+        if available_openings <= 0:
+            await bot.send_message(message.from_user.id, lang[database.get_language(message)]['no_openings'])
+            return
+
+    if message.text in all_lang['get_card_again']:
+        await bot.send_message(message.from_user.id,
+                               lang[database.get_language(message)]['question_again'](message),
+                               reply_markup=types.ReplyKeyboardRemove())
+    else:
+        await bot.send_message(message.from_user.id,
+                               lang[database.get_language(message)]['question_start'](message),
+                               reply_markup=types.ReplyKeyboardRemove())
+    await Register.input_question.set()  # user.py -> get_question
+    await state.update_data(check='False')
+    await check_time(message, state)
+    return
 
 
 async def session_3_cards(message: types.Message, state: FSMContext):

@@ -10,3 +10,4 @@ aiogram-calendar==0.1.1
 aiogram-timepicker==0.2.1
 kerykeion==4.2.4
 pandas==2.2.2
+mysql-connector-python==9.0.0
