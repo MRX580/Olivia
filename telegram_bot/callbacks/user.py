@@ -119,9 +119,13 @@ async def add_reaction(call: types.CallbackQuery, state: FSMContext):
 
 async def back_to_fortune(call: types.CallbackQuery, state: FSMContext):
     state_data = await state.get_data()
-    language_message = state_data['delete_msg_id']
+    delete_messages = state_data['delete_msg_id']
     user_message = state_data['user_message_id']
-    await bot.delete_message(chat_id=call.message.chat.id, message_id=language_message)
+    if isinstance(delete_messages, int):
+        await bot.delete_message(chat_id=call.message.chat.id, message_id=delete_messages)
+    else:
+        for message in delete_messages:
+            await bot.delete_message(chat_id=call.message.chat.id, message_id=message)
     await bot.delete_message(chat_id=call.message.chat.id, message_id=user_message)
 
 

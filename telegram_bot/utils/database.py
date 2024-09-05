@@ -15,10 +15,8 @@ from amplitude import Amplitude, BaseEvent
 amplitude = Amplitude("bbdc22a8304dbf12f2aaff6cd40fbdd3")
 load_dotenv(find_dotenv())
 
+
 class SingletonMeta(type):
-    """
-    Паттерн Singleton: Метакласс, который обеспечивает создание одного экземпляра класса.
-    """
     _instances = {}
 
     def __call__(cls, *args, **kwargs):
@@ -72,7 +70,7 @@ class Database(metaclass=SingletonMeta):
                 cur.execute(max_energy_query)
                 max_energy = int(cur.fetchall()[0][0])
                 cur.execute(energy_query)
-                energy = cur.fetchall()[0][0]
+                energy = int(cur.fetchall()[0][0])
                 if energy < max_energy:
                     cur.execute('UPDATE olivia SET energy = energy + 1')
                 self.conn.commit()
@@ -339,11 +337,11 @@ class User(Database):
         return {row[0]: row[1] for row in result}
 
 
-
 class Fortune(Database):
     def __init__(self):
         print(33)
         super().__init__()
+
     def create_fortune(self, tg_user: Message or CallbackQuery,
                        card_type: str,
                        answer: str,
@@ -351,7 +349,7 @@ class Fortune(Database):
         query = """INSERT INTO fortune(user_id, first_name, card_type, answer, type_fortune, create_at)
         VALUES(%s,%s,%s,%s,%s,%s)"""
         self.execute_update(query, (
-        tg_user.from_user.id, tg_user.from_user.first_name, card_type, answer, type_fortune, datetime.now()))
+            tg_user.from_user.id, tg_user.from_user.first_name, card_type, answer, type_fortune, datetime.now()))
 
     def add_history(self, tg_user: Message or CallbackQuery,
                     card: str,

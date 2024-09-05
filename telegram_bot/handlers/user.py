@@ -327,22 +327,27 @@ async def get_location(message: types.Message, state: FSMContext):
 
 async def donate(message: types.Message, state: FSMContext):
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    keyboard.add(types.KeyboardButton(text="Подписка Standard"))
-    keyboard.add(types.KeyboardButton(text="Подписка month unlimited"))
-    keyboard.add(types.KeyboardButton(text="Подписка Lifetime"))
+    keyboard.add(types.KeyboardButton(text="Стандарт"))
+    keyboard.add(types.KeyboardButton(text="Безлимитный месяц"))
+    keyboard.add(types.KeyboardButton(text="Пожизненно"))
 
-    # Отправляем сообщение с клавиатурой
-    await message.answer(
-        "Выберите свою подписку:",
+    msg = await message.answer(
+        "Пожалуйста, выберите тип подписки:\n\n"
+        "🔹 *Стандарт* — 10 гаданий в день вместо 3 на протяжении месяца.\n\n"
+        "🔹 *Безлимитный месяц* — неограниченное количество гаданий в течение одного месяца.\n\n"
+        "🔹 *Пожизненная подписка* — бесконечные гадания на всю жизнь!",
         reply_markup=keyboard
     )
 
+    msg_back = await message.answer("Вернуться к гаданиям?", reply_markup=Kb.BACK_TO_FORTUNE(message))
+    await state.update_data(delete_msg_id=[msg['message_id'], msg_back['message_id']], user_message_id=message['message_id'])
+
 
 async def standard_subscription(message: types.Message, state: FSMContext):
-    prices = [LabeledPrice(label='Standard', amount=100)]
+    prices = [LabeledPrice(label='Стандарт', amount=100)]
     await bot.send_invoice(
         message.chat.id,
-        title='Покупка standard подписки',
+        title='Покупка "Стандарт" подписки',
         description='С этой подпиской вы получаете 10 гаданий каждый день!',
         payload='unique_payload',
         provider_token='PROVIDER_TOKEN',
@@ -357,7 +362,7 @@ async def month_unlimited_subscription(message: types.Message, state: FSMContext
     prices = [LabeledPrice(label='Unlimited month', amount=400)]
     await bot.send_invoice(
         message.chat.id,
-        title='Покупка unlimited month подписки',
+        title='Покупка "Безлимитный месяц" подписки',
         description='С этой подпиской вы получаете безграничные гадания на протяжении месяца!',
         payload='unique_payload',
         provider_token='PROVIDER_TOKEN',
@@ -368,61 +373,88 @@ async def month_unlimited_subscription(message: types.Message, state: FSMContext
     )
 
 
-async def handle_subscription_choice(message: types.Message):
-    if message.text == "Подписка Standard":
+async def handle_subscription_choice(message: types.Message, state: FSMContext):
+    if message.text == "Стандарт":
         payload = "standard_subscription"
-        price = 100
-        label = "Подписка Standard"
-        description = "Подписка Standard даёт вам в течении месяца открывать до 10 карт в день!"
-    elif message.text == "Подписка month unlimited":
-        payload = "standard_subscription"
-        price = 400
-        label = "Подписка month unlimited"
-        description = "Подписка month unlimited даёт вам бессконечно открывать карты в течении месяца"
-    elif message.text == "Подписка Lifetime":
+        price = 1
+        label = "Стандарт"
+        description = "Подписка \"Стандарт\" даёт вам в течении месяца открывать до 10 карт в день!"
+    elif message.text == "Безлимитный месяц":
+        payload = "month_unlimited_subscription"
+        price = 1
+        label = "Безлимитный месяц"
+        description = "Подписка \"Безлимитный месяц\" даёт вам бессконечно открывать карты в течении месяца"
+    elif message.text == "Пожизненно":
         payload = "lifetime_subscription"
-        price = 4000
-        label = "Подписка Lifetime"
-        description = "Подписка Lifetime даёт вам пожизненый доступ к бессконечному количеству гаданий"
+        price = 1
+        label = "Пожизненно"
+        description = "Подписка \"Пожизненно\" даёт вам пожизненый доступ к бессконечному количеству гаданий"
     else:
         await message.reply("Unknown subscription")
         return
 
     # Send invoice
-    await bot.send_invoice(
+    msg_invoice = await bot.send_invoice(
         chat_id=message.from_user.id,
         title=label,
         description=description,
         payload=payload,
-        provider_token="gklsnlhjrs@$jgae32523",
+        provider_token="",
         currency="XTR",
         prices=[LabeledPrice(label=label, amount=price)],
         photo_url='https://i.imgur.com/dI7HPmJ.jpeg',
         start_parameter=payload
     )
 
+    temp_state = await state.get_data('delete_msg_id')
+    await bot.delete_message(message.chat.id, temp_state['delete_msg_id'][1]) # back_message from last action
+    temp_state['delete_msg_id'].pop(1)
+    temp_state['delete_msg_id'].append(msg_invoice['message_id'])
+    temp_state['delete_msg_id'].append(temp_state['user_message_id'])
+    msg_back = await message.answer("Вернуться к гаданиям?", reply_markup=Kb.BACK_TO_FORTUNE(message))
+    temp_state['delete_msg_id'].append(msg_back['message_id'])
+    await state.update_data(delete_msg_id=temp_state['delete_msg_id'], user_message_id=message['message_id'])
 
-async def successful_payment(message: types.Message) -> None:
+
+
+async def precheckout_callback(update: types.PreCheckoutQuery):
+    query = update
+
+    if (query.invoice_payload == 'standard_subscription' or query.invoice_payload == 'month_unlimited_subscription'
+            or query.invoice_payload == 'lifetime_subscription'):
+        await bot.answer_pre_checkout_query(pre_checkout_query_id=query.id, ok=True)
+    else:
+        await bot.answer_pre_checkout_query(pre_checkout_query_id=query.id, ok=False,
+                                            error_message="Что-то пошло не так, свяжитесь с @MRXlllll для решение "
+                                                          "проблемы")
+
+
+async def successful_payment(message: types.Message, state: FSMContext) -> None:
     item_id = message.successful_payment.invoice_payload
 
-    await bot.refund_star_payment(
-        user_id=message.from_user.id,
-        telegram_payment_charge_id=message.successful_payment.telegram_payment_charge_id,
-    )
-
+    # Логика выдачи подписки
     if item_id == "standard_subscription":
         await message.answer(
-            "Поздравляем! Вам выдана подписка Standard на месяц. Вы можете открывать до 10 карт в день!")
+            "Поздравляем! Вам выдана подписка \"Стандарт\" на месяц. Вы можете открывать до 10 карт в день в течении месяца!\nЧто ж, давайте теперь я вам погадаю"
+        )
+        database.set_subscription_expiration(message)
         database.change_user_subscription(message, 'standard')
     elif item_id == "month_unlimited_subscription":
         await message.answer(
-            "Поздравляем! Вам выдана подписка month unlimited. Вы можете открывать карты неограниченно в течение месяца!")
+            "Поздравляем! Вам выдана подписка \"Безлимитный месяц\". Вы можете открывать карты неограниченно в течение месяца!\nЧто ж, давайте теперь я вам погадаю"
+        )
         database.change_user_subscription(message, 'month_unlimited')
         database.set_subscription_expiration(message)
     elif item_id == "lifetime_subscription":
         await message.answer(
-            "Поздравляем! Вам выдана пожизненная подписка Lifetime. Вы можете открывать карты неограниченно!")
+            "Поздравляем! Вам выдана подписка \"Пожизненно\". Вы можете открывать карты неограниченно!\nЧто ж, давайте теперь я вам погадаю"
+        )
         database.change_user_subscription(message, 'lifetime')
+
+    await bot.send_message(message.chat.id, lang[database.get_language(message)]['question_start'](message))
+    await Register.input_question.set()
+    await state.update_data(check='False')
+    await check_time(message, state)
 
 
 def register_handlers_client(dp: Dispatcher):
@@ -443,5 +475,6 @@ def register_handlers_client(dp: Dispatcher):
     dp.register_message_handler(after_session, Text(equals=all_lang['after_session']))
     dp.register_message_handler(get_location, state=Register.input_location)
     dp.register_message_handler(handle_subscription_choice,
-                                text=["Подписка Standard", "Подписка month unlimited", "Подписка Lifetime"], state='*')
+                                text=["Стандарт", "Безлимитный месяц", "Пожизненно"], state='*')
     dp.register_message_handler(successful_payment, content_types=ContentType.SUCCESSFUL_PAYMENT)
+    dp.register_pre_checkout_query_handler(precheckout_callback)
