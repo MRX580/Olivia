@@ -1,5 +1,4 @@
 import os
-from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
 import mysql.connector
@@ -29,6 +28,7 @@ class SingletonMeta(type):
 class Database(metaclass=SingletonMeta):
     def __init__(self):
         self.connect_to_db()
+        self.create_tables_if_not_exist()
 
     def connect_to_db(self):
         try:
@@ -43,6 +43,93 @@ class Database(metaclass=SingletonMeta):
         except mysql.connector.Error as err:
             print(f"Error: {err}")
             self.conn = None
+
+    def create_tables_if_not_exist(self):
+        tables = {
+            "users": """
+                CREATE TABLE IF NOT EXISTS users (
+                    user_id BIGINT PRIMARY KEY,
+                    first_name VARCHAR(100),
+                    name VARCHAR(100),
+                    energy INT,
+                    language VARCHAR(10),
+                    attempts_used INT,
+                    last_attempt DATETIME,
+                    is_first_try BOOLEAN,
+                    join_at DATETIME,
+                    phone_number VARCHAR(20),
+                    username VARCHAR(100),
+                    natal_data TEXT,
+                    natal_city VARCHAR(100),
+                    available_openings INT,
+                    subscription VARCHAR(50),
+                    subscription_expired DATETIME
+                )
+            """,
+            "olivia": """
+                CREATE TABLE IF NOT EXISTS olivia (
+                    energy INT,
+                    max_energy INT
+                )
+            """,
+            "fortune": """
+                CREATE TABLE IF NOT EXISTS fortune (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    user_id BIGINT,
+                    first_name VARCHAR(100),
+                    card_type VARCHAR(100),
+                    answer TEXT,
+                    type_fortune VARCHAR(100),
+                    create_at DATETIME
+                )
+            """,
+            "history": """
+                CREATE TABLE IF NOT EXISTS history (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    user_id BIGINT,
+                    card VARCHAR(100),
+                    text TEXT,
+                    create_at DATETIME,
+                    user_q TEXT,
+                    reaction VARCHAR(100),
+                    message_id INT,
+                    thanks BOOLEAN,
+                    full_text TEXT
+                )
+            """,
+            "wisdom": """
+                CREATE TABLE IF NOT EXISTS wisdom (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    user_id BIGINT,
+                    first_name VARCHAR(100),
+                    message TEXT,
+                    create_at DATETIME
+                )
+            """,
+            "web3_addresses": """
+                CREATE TABLE IF NOT EXISTS web3_addresses (
+                    user_id BIGINT PRIMARY KEY,
+                    bitcoin VARCHAR(100),
+                    ethereum VARCHAR(100),
+                    ripple VARCHAR(100)
+                )
+            """,
+            "temp_data": """
+                CREATE TABLE IF NOT EXISTS temp_data (
+                    user_id BIGINT PRIMARY KEY,
+                    birth_request_sent BOOLEAN
+                )
+            """,
+            "payment_data": """
+                CREATE TABLE IF NOT EXISTS payment_data (
+                    user_id BIGINT PRIMARY KEY,
+                    birth_request_sent BOOLEAN
+                )
+            """
+        }
+
+        for table_name, create_table_query in tables.items():
+            self.execute_update(create_table_query)
 
     def check_connection(self):
         if self.conn is None or not self.conn.is_connected():

@@ -1,7 +1,9 @@
 import asyncio
 import json
+import os
 from pathlib import Path
 
+import aiohttp
 import requests
 
 from aiogram import types, Dispatcher
@@ -10,7 +12,7 @@ from aiogram.dispatcher import FSMContext
 from datetime import datetime, timedelta
 from dotenv import load_dotenv, find_dotenv
 
-from aiogram.types import LabeledPrice, InputFile, ContentType
+from aiogram.types import LabeledPrice, InputFile, ContentType, ParseMode
 from amplitude import Amplitude, BaseEvent
 
 from telegram_bot.create_bot import bot, CODE_MODE
@@ -325,7 +327,7 @@ async def get_location(message: types.Message, state: FSMContext):
         await check_time(message, state)
 
 
-async def donate(message: types.Message, state: FSMContext):
+async def donate_payment(message: types.Message, state: FSMContext):
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(types.KeyboardButton(text="Стандарт"))
     keyboard.add(types.KeyboardButton(text="Безлимитный месяц"))
@@ -340,7 +342,7 @@ async def donate(message: types.Message, state: FSMContext):
     )
 
     msg_back = await message.answer("Вернуться к гаданиям?", reply_markup=Kb.BACK_TO_FORTUNE(message))
-    await state.update_data(delete_msg_id=[msg['message_id'], msg_back['message_id']], user_message_id=message['message_id'])
+    await state.update_data(delete_msg_id=[msg['message_id'], msg_back['message_id'], message['message_id']])
 
 
 async def standard_subscription(message: types.Message, state: FSMContext):
@@ -373,18 +375,49 @@ async def month_unlimited_subscription(message: types.Message, state: FSMContext
     )
 
 
-async def handle_subscription_choice(message: types.Message, state: FSMContext):
+async def choice_payment(message: types.Message, state: FSMContext):
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(types.KeyboardButton(text="Криптовалютой"))
+    keyboard.add(types.KeyboardButton(text="Telegram Stars"))
+
     if message.text == "Стандарт":
+        description = "Подписка \"Стандарт\" даёт вам в течении месяца открывать до 10 карт в день!"
+        subscription = "standard"
+    elif message.text == "Безлимитный месяц":
+        description = "Подписка \"Безлимитный месяц\" даёт вам бессконечно открывать карты в течении месяца"
+        subscription = "month_unlimited"
+    elif message.text == "Пожизненно":
+        description = "Подписка \"Пожизненно\" даёт вам пожизненый доступ к бессконечному количеству гаданий"
+        subscription = "lifetime"
+    else:
+        await message.reply("Unknown subscription")
+        return
+
+    await state.update_data(subscription=subscription)
+    msg = await bot.send_message(message.chat.id, f'Вы выбрали подписку "{message.text}"\n{description}\n\nВыберите удобный способ оплаты', reply_markup=keyboard)
+    temp_state = await state.get_data('delete_msg_id')
+    await bot.delete_message(message.chat.id, temp_state['delete_msg_id'][1])  # back_message from last action
+    temp_state['delete_msg_id'].pop(1)
+    msg_back = await message.answer("Вернуться к гаданиям?", reply_markup=Kb.BACK_TO_FORTUNE(message))
+    temp_state['delete_msg_id'].append(msg['message_id'])
+    temp_state['delete_msg_id'].append(msg_back['message_id'])
+    await state.update_data(delete_msg_id=temp_state['delete_msg_id'], user_message_id=message['message_id'])
+
+
+async def handle_subscription_choice(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+    subscription = data['subscription']
+    if subscription == "standard":
         payload = "standard_subscription"
         price = 1
         label = "Стандарт"
         description = "Подписка \"Стандарт\" даёт вам в течении месяца открывать до 10 карт в день!"
-    elif message.text == "Безлимитный месяц":
+    elif subscription == "month_unlimited":
         payload = "month_unlimited_subscription"
         price = 1
         label = "Безлимитный месяц"
         description = "Подписка \"Безлимитный месяц\" даёт вам бессконечно открывать карты в течении месяца"
-    elif message.text == "Пожизненно":
+    elif subscription == "lifetime":
         payload = "lifetime_subscription"
         price = 1
         label = "Пожизненно"
@@ -407,14 +440,13 @@ async def handle_subscription_choice(message: types.Message, state: FSMContext):
     )
 
     temp_state = await state.get_data('delete_msg_id')
-    await bot.delete_message(message.chat.id, temp_state['delete_msg_id'][1]) # back_message from last action
-    temp_state['delete_msg_id'].pop(1)
+    await bot.delete_message(message.chat.id, temp_state['delete_msg_id'][3]) # back_message from last action
+    temp_state['delete_msg_id'].pop(3)
     temp_state['delete_msg_id'].append(msg_invoice['message_id'])
     temp_state['delete_msg_id'].append(temp_state['user_message_id'])
     msg_back = await message.answer("Вернуться к гаданиям?", reply_markup=Kb.BACK_TO_FORTUNE(message))
     temp_state['delete_msg_id'].append(msg_back['message_id'])
     await state.update_data(delete_msg_id=temp_state['delete_msg_id'], user_message_id=message['message_id'])
-
 
 
 async def precheckout_callback(update: types.PreCheckoutQuery):
@@ -457,13 +489,63 @@ async def successful_payment(message: types.Message, state: FSMContext) -> None:
     await check_time(message, state)
 
 
+async def crypto(message: types.Message, state: FSMContext) -> None:
+    data = await state.get_data()
+    subscription = data['subscription']
+    user_id = message.from_user.id
+
+    charge = await create_charge(subscription, user_id, 0.1)
+
+    if "error" not in charge:
+        charge_url = charge["data"]["hosted_url"]
+        msg = await message.reply(f"Ссылка на оплату: [Оплатить здесь]({charge_url})", parse_mode=ParseMode.MARKDOWN, reply_markup=types.ReplyKeyboardRemove())
+    else:
+        msg = await message.reply(f"Ошибка создания платежа: {charge['error']}", reply_markup=types.ReplyKeyboardRemove())
+
+    temp_state = await state.get_data('delete_msg_id')
+    await bot.delete_message(message.chat.id, temp_state['delete_msg_id'][3]) # back_message from last action
+    temp_state['delete_msg_id'].pop(3)
+    temp_state['delete_msg_id'].append(msg['message_id'])
+    temp_state['delete_msg_id'].append(temp_state['user_message_id'])
+    msg_back = await message.answer("Вернуться к гаданиям?", reply_markup=Kb.BACK_TO_FORTUNE(message))
+    temp_state['delete_msg_id'].append(msg_back['message_id'])
+    await state.update_data(delete_msg_id=temp_state['delete_msg_id'], user_message_id=message['message_id'])
+
+
+async def create_charge(item, user_id, amount: float):
+    url = "https://api.commerce.coinbase.com/charges/"
+    headers = {
+        "Content-Type": "application/json",
+        "X-CC-Api-Key": os.getenv("COINBASE_TOKEN"),
+    }
+    payload = {
+        "name": f"{item}",
+        "description": f"Оплата от пользователя {user_id}",
+        "pricing_type": "fixed_price",
+        "local_price": {
+            "amount": f"{amount}",
+            "currency": "USD"
+        }
+    }
+
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, headers=headers, json=payload) as response:
+            if response.status == 201:
+                charge_data = await response.json()
+                return charge_data
+            else:
+                error = await response.text()
+                return {"error": error}
+
+
 def register_handlers_client(dp: Dispatcher):
     dp.register_message_handler(welcome, commands=['start', 'help'], state='*')
     dp.register_message_handler(about_olivia, commands=['intro'], state='*')
     dp.register_message_handler(join, commands=['join'], state='*')
     dp.register_message_handler(payment, commands=['payment'], state='*')
     dp.register_message_handler(change_language, commands=['language'], state='*')
-    dp.register_message_handler(donate, commands=['donate'], state='*')
+    dp.register_message_handler(donate_payment, commands=['donate'], state='*')
+    dp.register_message_handler(crypto, commands=['crypto'], state='*')
     dp.register_message_handler(get_name, state=Register.input_name)
     dp.register_message_handler(get_question, state=Register.input_question)
     dp.register_message_handler(listen_wisdom, state=WisdomState.wisdom)
@@ -474,7 +556,9 @@ def register_handlers_client(dp: Dispatcher):
     dp.register_message_handler(after_session, Text(equals=all_lang['after_session']))
     dp.register_message_handler(after_session, Text(equals=all_lang['after_session']))
     dp.register_message_handler(get_location, state=Register.input_location)
-    dp.register_message_handler(handle_subscription_choice,
+    dp.register_message_handler(choice_payment,
                                 text=["Стандарт", "Безлимитный месяц", "Пожизненно"], state='*')
+    dp.register_message_handler(crypto, text="Криптовалютой", state='*')
+    dp.register_message_handler(handle_subscription_choice, text="Telegram Stars", state='*')
     dp.register_message_handler(successful_payment, content_types=ContentType.SUCCESSFUL_PAYMENT)
     dp.register_pre_checkout_query_handler(precheckout_callback)
