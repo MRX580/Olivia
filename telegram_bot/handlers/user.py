@@ -41,13 +41,16 @@ def callback_fun(e, code, message):
 
 amplitude.configuration.callback = callback_fun
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DIR_IMG_DONATE = os.path.join(BASE_DIR, '..', 'static', 'img', 'static', 'donate_picture.jpg')
+
 
 def convert_str_in_datetime(time_str: str) -> datetime:
     time_str = time_str.replace('"', '')
-    time = list(map(int, time_str[:-7].split(' ')[0].split('-'))) + list(
-        map(int, time_str[:-7].split(' ')[1].split(':')))
-    time_result = datetime(month=time[1], year=time[0], day=time[2], hour=time[3], minute=time[4], second=time[5])
-    return time_result
+    date_part, time_part = time_str[:-7].split(' ')
+    y, m, d = map(int, date_part.split('-'))
+    h, mi, s = map(int, time_part.split(':'))
+    return datetime(year=y, month=m, day=d, hour=h, minute=mi, second=s)
 
 
 async def welcome(message: types.Message, state: FSMContext):
@@ -96,27 +99,26 @@ async def divination(message: types.Message):
     await Session.get_card.set()
 
 
-async def close_session_with_delay(message: types.Message, state: FSMContext, time: int = 0):
-    if time:
-        await asyncio.sleep(time)
+async def close_session_with_delay(message: types.Message, state: FSMContext, delay: int = 0):
+    if delay:
+        await asyncio.sleep(delay)
     data = await state.get_data()
     try:
-        time = convert_str_in_datetime(data['close_session'])
-        if not data['thx']:
-            if time + timedelta(hours=1) < datetime.now():
-                logging_to_file_telegram('info',
-                                         f'[{message.from_user.id} | {message.from_user.first_name}] Callback: Сессия закрыта без "Спасибо"')
-                await bot.send_message(message.chat.id, lang[database.get_language(message)]['end_session'](message),
-                                       reply_markup=KbReply.AFTER_END_SESSION(message))
-                await state.reset_state()
-        else:
-            if time + timedelta(minutes=5) < datetime.now():
-                logging_to_file_telegram('info',
-                                         f'[{message.from_user.id} | {message.from_user.first_name}] Callback: Сессия закрыта с "Спасибо"')
-                await bot.send_message(message.chat.id, lang[database.get_language(message)]['end_session'](message),
-                                       disable_notification=True,
-                                       reply_markup=KbReply.AFTER_END_SESSION(message))
-                await state.reset_state()
+        close_time = convert_str_in_datetime(data['close_session'])
+        threshold = timedelta(hours=1) if not data.get('thx') else timedelta(minutes=5)
+        if close_time + threshold < datetime.now():
+            logging_to_file_telegram('info',
+                                     f'[{message.from_user.id} | {message.from_user.first_name}] Callback: Сессия закрыта {"с" if data.get("thx") else "без"} "Спасибо"')
+            await bot.send_message(
+                message.chat.id,
+                lang[database.get_language(message)]['end_session'](message),
+                reply_markup=KbReply.AFTER_END_SESSION(message),
+                disable_notification=data.get('thx', False)
+            )
+
+            msg = await bot.send_photo(message.chat.id, photo=open(DIR_IMG_DONATE, 'rb'), reply_markup=Kb.DONATE(message))
+            await state.reset_state()
+            await state.update_data(delete_msg_id=msg['message_id'])
     except KeyError:
         pass
 
@@ -124,27 +126,19 @@ async def close_session_with_delay(message: types.Message, state: FSMContext, ti
 async def check_time(message: types.Message, state: FSMContext):
     await asyncio.sleep(90)
     data = await state.get_data()
-    try:
-        if data['check'] == 'False': # Заменить на время
-            logging_to_file_telegram('info',
-                                     f'[{message.from_user.id} | {message.from_user.first_name}] Callback: check_time | Пользователь не задал вопрос')
-            await bot.send_message(message.chat.id, lang[database.get_language(message)]['get_card'],
-                                   reply_markup=KbReply.GET_CARD(message))
-            data = await state.get_data('rand_card')
-            try:
-                rand_card = data['rand_card']
-                rand_card[0], rand_card[1] = rand_card[1], rand_card[0]
-                prompt = data['prompt']
-            except KeyError:
-                rand_card = None
-                prompt = {'messages': [{'role': 'system', 'content': None}]}
-            await state.finish()
-            await state.update_data(rand_card=rand_card, prompt=prompt, check='True', question=None)
-            await Session.get_card.set()
-    except KeyError:
+    if data.get('check') == 'False':
+        logging_to_file_telegram('info',
+                                 f'[{message.from_user.id} | {message.from_user.first_name}] Callback: check_time | Пользователь не задал вопрос')
+        await bot.send_message(message.chat.id, lang[database.get_language(message)]['get_card'],
+                               reply_markup=KbReply.GET_CARD(message))
+        rand_card = data.get('rand_card', [None, None])[::-1] if data.get('rand_card') else None
+        prompt = data.get('prompt', {'messages': [{'role': 'system', 'content': None}]})
+        await state.finish()
+        await state.update_data(rand_card=rand_card, prompt=prompt, check='True', question=None)
+        await Session.get_card.set()
+    else:
         logging_to_file_telegram('info',
                                  f'[{message.from_user.id} | {message.from_user.first_name}] Callback: check_time | Пользователь задал вопрос')
-        pass
 
 
 async def get_name(message: types.Message):
@@ -152,39 +146,30 @@ async def get_name(message: types.Message):
                              f'[{message.from_user.id} | {message.from_user.first_name}] Придумал себе имя "{message.text}" при регистрации')
     database.update_name(message)
     lang_user = database.get_language(message)
-    if lang_user == 'ru':
-        await bot.send_message(
-            message.chat.id,
-            f'Вам тут рады, {message.text}, добро пожаловать.\n\nНачнем наше первое гадание?\nЗадайте свой вопрос 👇'
-        )
-    elif lang_user == 'en':
-        await bot.send_message(
-            message.chat.id,
-            f'Warm welcome, {message.text}, honored to meet you.\n\nLet’s start our first reading?\nAsk your question 👇'
-        )
-
+    welcome_text = (
+        f'Вам тут рады, {message.text}, добро пожаловать.\n\nНачнем наше первое гадание?\nЗадайте свой вопрос 👇'
+        if lang_user == 'ru'
+        else f'Warm welcome, {message.text}, honored to meet you.\n\nLet’s start our first reading?\nAsk your question 👇'
+    )
+    await bot.send_message(message.chat.id, welcome_text)
     await Register.input_question.set()
 
 
 async def thanks(message: types.Message, state: FSMContext):
     logging_to_file_telegram('info',
                              f'[{message.from_user.id} | {message.from_user.first_name}] Callback: Нажато "Спасибо"')
-    async with state.proxy() as data:
-        if not data['thx']:
-            if CODE_MODE == 'PROD':
-                amplitude.track(
-                    BaseEvent(event_type='Thanks', user_id=f'{message.from_user.id}'))
-            await state.update_data(close_session=json.dumps(datetime.now(), default=str))
-            await state.update_data(thx=True)
-            database.add_thanks(data['message_id'])
-            database.plus_energy()
-            if not data['full_text']:
-                await bot.send_message(message.chat.id, lang[database.get_language(message)]['thanks'](message),
-                                       reply_markup=KbReply.FULL_TEXT_WITHOUT_THX(message))
-            else:
-                await bot.send_message(message.chat.id, lang[database.get_language(message)]['thanks'](message),
-                                       reply_markup=KbReply.FULL_TEXT_WITHOUT_THX(message))
-            await close_session_with_delay(message, state, 300)
+    data = await state.get_data()
+    if not data.get('thx'):
+        if CODE_MODE == 'PROD':
+            amplitude.track(BaseEvent(event_type='Thanks', user_id=str(message.from_user.id)))
+        await state.update_data(close_session=json.dumps(datetime.now(), default=str), thx=True)
+        database.add_thanks(data['message_id'])
+        database.plus_energy()
+        reply = KbReply.FULL_TEXT_WITHOUT_THX(message) if data.get('full_text') else KbReply.FULL_TEXT_WITHOUT_THX(
+            message)
+        await bot.send_message(message.chat.id, lang[database.get_language(message)]['thanks'](message),
+                               reply_markup=reply)
+        await close_session_with_delay(message, state, 3)
 
 
 async def get_question(message: types.Message, state: FSMContext):
@@ -394,7 +379,9 @@ async def choice_payment(message: types.Message, state: FSMContext):
         return
 
     await state.update_data(subscription=subscription)
-    msg = await bot.send_message(message.chat.id, f'Вы выбрали подписку "{message.text}"\n{description}\n\nВыберите удобный способ оплаты', reply_markup=keyboard)
+    msg = await bot.send_message(message.chat.id,
+                                 f'Вы выбрали подписку "{message.text}"\n{description}\n\nВыберите удобный способ оплаты',
+                                 reply_markup=keyboard)
     temp_state = await state.get_data('delete_msg_id')
     await bot.delete_message(message.chat.id, temp_state['delete_msg_id'][1])  # back_message from last action
     temp_state['delete_msg_id'].pop(1)
@@ -440,7 +427,7 @@ async def handle_subscription_choice(message: types.Message, state: FSMContext):
     )
 
     temp_state = await state.get_data('delete_msg_id')
-    await bot.delete_message(message.chat.id, temp_state['delete_msg_id'][3]) # back_message from last action
+    await bot.delete_message(message.chat.id, temp_state['delete_msg_id'][3])  # back_message from last action
     temp_state['delete_msg_id'].pop(3)
     temp_state['delete_msg_id'].append(msg_invoice['message_id'])
     temp_state['delete_msg_id'].append(temp_state['user_message_id'])
@@ -494,16 +481,18 @@ async def crypto(message: types.Message, state: FSMContext) -> None:
     subscription = data['subscription']
     user_id = message.from_user.id
 
-    charge = await create_charge(subscription, user_id, 0.1)
+    charge = await create_charge(subscription, user_id, 0)
 
     if "error" not in charge:
         charge_url = charge["data"]["hosted_url"]
-        msg = await message.reply(f"Ссылка на оплату: [Оплатить здесь]({charge_url})", parse_mode=ParseMode.MARKDOWN, reply_markup=types.ReplyKeyboardRemove())
+        msg = await message.reply(f"Ссылка на оплату: [Оплатить здесь]({charge_url})", parse_mode=ParseMode.MARKDOWN,
+                                  reply_markup=types.ReplyKeyboardRemove())
     else:
-        msg = await message.reply(f"Ошибка создания платежа: {charge['error']}", reply_markup=types.ReplyKeyboardRemove())
+        msg = await message.reply(f"Ошибка создания платежа: {charge['error']}",
+                                  reply_markup=types.ReplyKeyboardRemove())
 
     temp_state = await state.get_data('delete_msg_id')
-    await bot.delete_message(message.chat.id, temp_state['delete_msg_id'][3]) # back_message from last action
+    await bot.delete_message(message.chat.id, temp_state['delete_msg_id'][3])  # back_message from last action
     temp_state['delete_msg_id'].pop(3)
     temp_state['delete_msg_id'].append(msg['message_id'])
     temp_state['delete_msg_id'].append(temp_state['user_message_id'])

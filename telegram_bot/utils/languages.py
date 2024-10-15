@@ -111,7 +111,10 @@ Today, and practically any other day as well, smile wide in the face of uncertai
 
 Wanna know how? Here is your card of the day 👇
         """,
-        'no_openings': 'I\'m tired and can\'t tell you your fortune anymore, come back tomorrow'
+        'no_openings': 'I\'m tired and can\'t tell you your fortune anymore, come back tomorrow',
+        'share_link_with_olivia': 'Share a link to Olivia',
+        'usdt_donate_back': 'Back',
+        'usdt_donate': lambda data: f'Thank you for your interest in our bot\! With your support, we can achieve maximum improvement of the bot, and you will be more comfortable using Olivia\n\nPlease pay: {data} USDT\n*TQvtpeipHPEsG6hstyrZ1SJGkTiqVM5YVi*'
     },
 
 
@@ -220,7 +223,10 @@ Wanna know how? Here is your card of the day 👇
 
 Хотите узнать как? Вот ваша карта дня 👇
         """,
-        'no_openings': 'Я устала и не могу больше погадать вам, приходите завтра'
+        'no_openings': 'Я устала и не могу больше погадать вам, приходите завтра',
+        'share_link_with_olivia': 'Поделится ссылкой на Оливию',
+        'usdt_donate_back': 'Назад',
+        'usdt_donate': lambda data: f'Спасибо за предоставленный интерес к нашему боту\! С вашей поддержкой мы сможем достичь максимального улучшения бота, и вам будет комфортнее пользоватся Оливией\n\nПожалуйста к оплате: {data} USDT\n*TQvtpeipHPEsG6hstyrZ1SJGkTiqVM5YVi*',
     }
 }
 

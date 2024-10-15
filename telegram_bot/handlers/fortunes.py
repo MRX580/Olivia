@@ -47,7 +47,7 @@ def chat_gpt_text_generation(state_data: FSMContext, name_card: str, lang_user: 
     if state_data['prompt']['messages'][0]['content'] is None:
         if letter_prompt:
             result = openai.ChatCompletion.create(
-                model="gpt-4o-2024-08-06",
+                model="gpt-4o-mini",
                 temperature=0.8,
                 messages=[
                     {'role': 'assistant',
@@ -55,28 +55,28 @@ def chat_gpt_text_generation(state_data: FSMContext, name_card: str, lang_user: 
             state_data['is_letter_prompt'] = False
         elif lang_user == 'ru':
             result = openai.ChatCompletion.create(
-                model="gpt-4o-2024-08-06",
+                model="gpt-4o-mini",
                 temperature=0.8,
                 messages=[
                     {'role': 'assistant',
                      'content': text_data.ru_prompt(name_card, is_reversed, state_data['question'])}])
         elif lang_user == 'en':
             result = openai.ChatCompletion.create(
-                model="gpt-4o-2024-08-06",
+                model="gpt-4o-mini",
                 messages=[
                     {'role': 'system', 'content': text_data.eng_prompt(name_card, is_reversed, state_data['question'])}]
             )
     else:
         if lang_user == 'ru':
             result = openai.ChatCompletion.create(
-                model="gpt-4o-2024-08-06",
+                model="gpt-4o-mini",
                 temperature=0.8,
                 messages=[*state_data['prompt']['messages'],
                           {'role': 'system',
                            'content': text_data.ru_continue_prompt(name_card, is_reversed, state_data['question'])}])
         elif lang_user == 'en':
             result = openai.ChatCompletion.create(
-                model="gpt-4o-2024-08-06",
+                model="gpt-4o-mini",
                 temperature=0.8,
                 messages=[*state_data['prompt']['messages'],
                           {'role': 'system',
@@ -101,7 +101,7 @@ def process_reversed_card_img(message: types.Message or types.CallbackQuery, pat
     if is_card_reversed(lang_user, card_name):
         im = im.rotate(180)
 
-    im.save(buffer, format='JPEG', quality=75)
+    im.save(buffer, format='PNG', quality=75)
     im.close()
     return buffer
 
@@ -148,7 +148,7 @@ async def get_card(message: types.Message or types.CallbackQuery, state: FSMCont
     card_files = os.listdir(DIR_IMG)
     card = card_files[rand_card][:-4]
     card_name = decks[card][lang_user]
-    path_img = os.path.join(DIR_IMG, f'{card}.jpg')
+    path_img = os.path.join(DIR_IMG, f'{card}.png')
     is_reversed = is_card_reversed(lang_user, card_name)
 
     logging_to_file_telegram('info',

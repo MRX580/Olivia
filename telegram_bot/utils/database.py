@@ -495,9 +495,10 @@ class Decks(Database):
         query = "UPDATE decks SET reversed = %s WHERE {} = %s".format(lang)
         self.execute_update(query, (reverse, text))
 
-    def get_reversed(self, lang: str, text: str):
+    def get_reversed(self, lang: str, card_name: str) -> bool:
         query = 'SELECT reversed FROM decks WHERE {} = %s'.format(lang)
-        return self.execute_query(query, (text,))[0][0]
+        result = self.execute_query(query, (card_name,))[0][0]
+        return bool(int(result))
 
     def reset_all_cards(self):
         query = 'UPDATE decks SET reversed = 0'

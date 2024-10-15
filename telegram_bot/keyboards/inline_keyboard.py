@@ -49,3 +49,23 @@ class Kb:
     FIRST_APRIL = lambda user_lang: InlineKeyboardMarkup(row_width=1).add(
         InlineKeyboardButton(text=lang[user_lang]['fool_card_button'], callback_data='start_fortune')
     )
+
+    USDT_DONATE_BACK = lambda data: InlineKeyboardMarkup(row_width=1).add(
+        InlineKeyboardButton(text=lang[database.get_language(data)]['usdt_donate_back'],
+                             callback_data='usdt_donate_back')
+    )
+
+    DONATE = (lambda data: InlineKeyboardMarkup(resize_keyboard=True, row_width=3)
+              .add(
+        InlineKeyboardButton(text="8 USDT", callback_data='8_USDT'),
+        InlineKeyboardButton(text="11 USDT", callback_data='11_USDT'),
+        InlineKeyboardButton(text="88 USDT", callback_data='88_USDT')
+    )
+              .add(
+        InlineKeyboardButton(text=lang[database.get_language(data)]['share_link_with_olivia'], switch_inline_query="")
+    )
+              .add(
+        InlineKeyboardButton(text=lang[database.get_language(data)]['back_to_fortune'], callback_data='back_to_fortune')
+    )
+              )
+
