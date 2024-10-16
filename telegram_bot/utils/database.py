@@ -2,6 +2,7 @@ import os
 from dateutil.relativedelta import relativedelta
 
 import mysql.connector
+from mysql.connector.errors import OperationalError, InterfaceError, DatabaseError
 import asyncio
 import pandas as pd
 
@@ -38,7 +39,8 @@ class Database(metaclass=SingletonMeta):
                 password=os.getenv("DB_PASSWORD"),
                 database=os.getenv("DB_DATABASE"),
                 autocommit=True,
-
+                pool_name='my_pool',
+                pool_size=20
             )
         except mysql.connector.Error as err:
             print(f"Error: {err}")
@@ -132,7 +134,12 @@ class Database(metaclass=SingletonMeta):
             self.execute_update(create_table_query)
 
     def check_connection(self):
-        if self.conn is None or not self.conn.is_connected():
+        try:
+            if self.conn is None or not self.conn.is_connected():
+                print("Соединение потеряно, пробуем восстановить...")
+                self.connect_to_db()
+        except (OperationalError, InterfaceError) as e:
+            print(f"Ошибка проверки соединения: {e}")
             self.connect_to_db()
 
     def execute_query(self, query, params=None):
@@ -143,9 +150,24 @@ class Database(metaclass=SingletonMeta):
 
     def execute_update(self, query, params=None):
         self.check_connection()
-        with self.conn.cursor() as cur:
-            cur.execute(query, params or ())
-            self.conn.commit()
+        retry_attempts = 3
+        for attempt in range(retry_attempts):
+            try:
+                with self.conn.cursor() as cur:
+                    cur.execute(query, params or ())
+                    self.conn.commit()
+                break
+            except (OperationalError, InterfaceError) as e:
+                print(f"Ошибка выполнения запроса, попытка {attempt + 1}/{retry_attempts}: {e}")
+                self.check_connection()
+            except DatabaseError as e:
+                print(f"Критическая ошибка базы данных: {e}")
+                self.conn.rollback()
+                break
+            except Exception as e:
+                print(f"Неизвестная ошибка: {e}")
+                self.conn.rollback()
+                break
 
     async def get_energy(self):
         while True:
